@@ -1,4 +1,4 @@
-use crate::models::{CreateUserDTO, User};
+use crate::models::{BindWalletAddressDTO, CreateUserDTO, User};
 
 use super::Database;
 use chrono::prelude::*;
@@ -15,6 +15,24 @@ pub async fn _create_user(
     .bind(referral_code)
     .fetch_one(db)
     .await?;
+    Ok(result.0)
+}
+
+pub async fn _bind_wallet_address(
+    db: &Database,
+    bind_wallet_address: BindWalletAddressDTO,
+) -> Result<i32, sqlx::Error> {
+    let wallet_address = bind_wallet_address.wallet_address;
+    let twitter_id = bind_wallet_address.twitter_id;
+
+    let query = "UPDATE users SET wallet_address = $1 WHERE twitter_id = $2 RETURNING id";
+
+    let result = sqlx::query_as::<_, (i32,)>(query)
+        .bind(wallet_address)
+        .bind(twitter_id)
+        .fetch_one(db)
+        .await?;
+
     Ok(result.0)
 }
 
