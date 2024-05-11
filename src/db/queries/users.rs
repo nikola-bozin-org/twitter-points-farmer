@@ -11,6 +11,8 @@ pub async fn _create_user(
     db: &Database,
     create_user_dto: CreateUserDTO,
 ) -> Result<i32, sqlx::Error> {
+    let tx = db.begin().await?;
+
     let referral_code = Utc::now().timestamp();
     let result = sqlx::query_as::<_, (i32,)>(
         "INSERT INTO users (twitter_id, referral_code) values ($1,$2) RETURNING id",
@@ -19,6 +21,36 @@ pub async fn _create_user(
     .bind(referral_code)
     .fetch_one(db)
     .await?;
+
+    if create_user_dto.reffer_code.is_some(){
+        let result_refered = _get_user_by_referral_code(db,create_user_dto.reffer_code.unwrap()).await.unwrap();
+        match result_refered {
+            Some(user) => {
+                let mut referred_by = user.referred_by.clone();
+                referred_by.push(result.0);
+
+                sqlx::query("UPDATE users SET referred_by = $1 WHERE id = $2")
+                    .bind(&referred_by)
+                    .bind(user.id)
+                    .execute(db)
+                    .await?;
+
+                sqlx::query("UPDATE users SET referrer_id = $1 WHERE id = $2")
+                    .bind(user.id)
+                    .bind(result.0)
+                    .execute(db)
+                    .await?;
+            },
+            None => {
+                // TODO
+                // If the referrer user does not exist, rollback the transaction and return an error?
+                // tx.rollback().await?;
+                return Ok(result.0);
+            }
+        }
+    }
+    tx.commit().await?;
+
     Ok(result.0)
 }
 
@@ -42,7 +74,7 @@ pub async fn _bind_wallet_address(
 
 pub async fn _get_users(db: &Database) -> Result<Vec<User>, sqlx::Error> {
     let users: Vec<User> =
-        sqlx::query_as("SELECT id, wallet_address, twitter_id, referral_code, total_points, finished_tasks, referral_points from users")
+        sqlx::query_as("SELECT id, wallet_address, twitter_id, referral_code, total_points, finished_tasks, referral_points, referred_by, referrer_id from users")
             .fetch_all(db)
             .await?;
     Ok(users)
@@ -53,7 +85,7 @@ pub async fn _finish_task(
     finish_task_dto: FinishTaskDTO,
 ) -> Result<(), sqlx::Error> {
     // This can be optimized. We dont need to query all!
-    let mut user: User = sqlx::query_as("SELECT id, wallet_address, twitter_id, referral_code, total_points, finished_tasks, referral_points FROM users WHERE id = $1")
+    let mut user: User = sqlx::query_as("SELECT id, wallet_address, twitter_id, referral_code, total_points, finished_tasks, referral_points, referred_by, referrer_id FROM users WHERE id = $1")
         .bind(finish_task_dto.user_id)
         .fetch_one(db)
         .await?;
@@ -63,6 +95,7 @@ pub async fn _finish_task(
         // This also checks if tasks exists
         let points_to_add = _get_points_for_task(db, finish_task_dto.task_id).await?;
 
+        let points_for_referral = points_to_add * crate::constants::REFERRAL_BONUS_PRECENT as i32 / 100;
         // Add the task to the finished tasks
         user.finished_tasks.push(finish_task_dto.task_id);
 
@@ -76,6 +109,21 @@ pub async fn _finish_task(
             .bind(finish_task_dto.user_id)
             .execute(db)
             .await?;
+
+        let mut user_referral: User = sqlx::query_as("SELECT id, wallet_address, twitter_id, referral_code, total_points, finished_tasks, referral_points, referred_by, referrer_id FROM users WHERE id = $1")
+        .bind(user.referrer_id)
+        .fetch_one(db)
+        .await?;
+
+    user_referral.total_points += points_for_referral;
+    user_referral.referral_points+=points_for_referral;
+
+    sqlx::query("UPDATE users SET total_points = $1, referral_points = $2 WHERE id = $3")
+    .bind(user_referral.total_points)
+    .bind(user_referral.referral_points)
+    .bind(user_referral.id)
+    .execute(db)
+    .await?;
     }
     // TODO: Should return error to client if task does not exist or already finished.
 
@@ -85,7 +133,7 @@ pub async fn _finish_task(
 
 pub async fn _get_user_by_referral_code(db: &Database, referral_code: i32) -> Result<Option<User>, sqlx::Error> {
     let user: Option<User> =
-        sqlx::query_as("SELECT id, wallet_address, twitter_id, referral_code, total_points, finished_tasks, referral_points FROM users WHERE referral_code = $1")
+        sqlx::query_as("SELECT id, wallet_address, twitter_id, referral_code, total_points, finished_tasks, referral_points, referred_by, referrer_id FROM users WHERE referral_code = $1")
             .bind(referral_code)
             .fetch_optional(db)
             .await?;

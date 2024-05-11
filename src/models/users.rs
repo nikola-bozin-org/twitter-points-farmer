@@ -9,5 +9,7 @@ pub struct User {
     pub referral_code: i32,
     pub total_points: i32,
     pub finished_tasks: Vec<i32>,
-    pub referral_points: i32, // received from others
+    pub referral_points: i32, // received from others farming points
+    pub referred_by:Vec<i32>,
+    pub referrer_id:Option<i32>,
 }

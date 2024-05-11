@@ -1,0 +1,1 @@
+pub const REFERRAL_BONUS_PRECENT:u16 = 20;

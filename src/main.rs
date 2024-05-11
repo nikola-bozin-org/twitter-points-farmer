@@ -2,6 +2,7 @@ mod db;
 mod models;
 mod routes;
 mod state;
+mod constants;
 
 use axum::{Extension, Router};
 use std::{env, sync::Arc};
