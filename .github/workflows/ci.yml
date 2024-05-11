@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Install Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: stable
+        override: true
+    
+    - name: Setup .env files
+      run: |
+        echo "POSTGRES_DB=${{ secrets.POSTGRES_DB }}" >> .env
+        echo "POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}" >> .env
+        echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> .env
+
+    - name: Start Services with Docker Compose
+      run: docker-compose up -d
+
+    - name: Install sqlx CLI
+      run: cargo install sqlx-cli
+
+    - name: Build server
+      run: cargo build --verbose --release
+
+    - name: Delay for all docker service startup # TODO: its good for now... but have to fix later
+      run: sleep 15  
+
+    - name: Run tests in server
+      run: cargo test --verbose -- --nocapture
