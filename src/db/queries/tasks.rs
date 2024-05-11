@@ -7,9 +7,10 @@ pub async fn _create_task(
     db: &Database,
     create_task_dto: CreateTaskDTO,
 ) -> Result<(), sqlx::Error> {
-    sqlx::query("INSERT INTO tasks (description, points) VALUES ($1, $2)")
+    sqlx::query("INSERT INTO tasks (description, points, link) VALUES ($1, $2, $3)")
         .bind(create_task_dto.description)
         .bind(create_task_dto.points)
+        .bind(create_task_dto.link)
         .execute(db)
         .await?;
     Ok(())
@@ -17,7 +18,7 @@ pub async fn _create_task(
 
 pub async fn _get_tasks(db: &Database) -> Result<Vec<Tasks>, sqlx::Error> {
     let tasks: Vec<Tasks> =
-        sqlx::query_as("SELECT id, description, points, time_created FROM tasks")
+        sqlx::query_as("SELECT id, description, points, time_created, link FROM tasks")
             .fetch_all(db)
             .await?;
     Ok(tasks)
