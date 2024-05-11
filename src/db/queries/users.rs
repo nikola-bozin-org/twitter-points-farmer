@@ -81,3 +81,42 @@ pub async fn _finish_task(
 
     Ok(())
 }
+
+
+pub async fn _get_user_by_referral_code(db: &Database, referral_code: i32) -> Result<Option<User>, sqlx::Error> {
+    let user: Option<User> =
+        sqlx::query_as("SELECT id, wallet_address, twitter_id, referral_code, total_points, finished_tasks, referral_points FROM users WHERE referral_code = $1")
+            .bind(referral_code)
+            .fetch_optional(db)
+            .await?;
+    Ok(user)
+}
+
+#[cfg(test)]
+mod tests {
+    use std::env;
+
+    use super::*;
+    use sqlx::postgres::PgPoolOptions;
+
+    #[tokio::test]
+    async fn test_get_user_by_referral_code() {
+        dotenv::dotenv().ok();
+        let pool = PgPoolOptions::new()
+            .max_connections(1) // Limit connections to avoid concurrency issues
+            .connect(env::var("DATABASE_URL").unwrap().as_str())
+            .await
+            .expect("Failed to create pool");
+
+        let referral_code = 1715433762;
+        let user_id = 1;
+
+        let user = _get_user_by_referral_code(&pool, referral_code)
+            .await
+            .expect("Failed to get user");
+
+        dbg!(&user);
+            
+        assert_eq!(user.unwrap().id, user_id);
+    }
+}
