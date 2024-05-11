@@ -38,5 +38,8 @@ jobs:
     - name: Delay for all docker service startup # TODO: its good for now... but have to fix later
       run: sleep 15  
 
+    - name: Migrate  Database
+      run: sqlx migrate run --database-url ${{ secrets.DATABASE_URL }}
+
     - name: Run tests in server
       run: cargo test --verbose -- --nocapture
