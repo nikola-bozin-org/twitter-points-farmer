@@ -1,4 +1,5 @@
 mod db;
+mod models;
 mod routes;
 mod state;
 
@@ -33,7 +34,5 @@ async fn main() {
         .nest("/api/v1", routes::routes())
         .layer(Extension(shared_state));
 
-    axum::serve(listener, router)
-          .await
-          .unwrap()
+    axum::serve(listener, router).await.unwrap()
 }

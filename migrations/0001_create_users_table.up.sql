@@ -1,5 +1,6 @@
 CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
-    walletAddress TEXT,
-    twitterId TEXT
+    wallet_address VARCHAR(255) UNIQUE,
+    twitter_id VARCHAR(255) NOT NULL UNIQUE,
+    referral_code INTEGER NOT NULL UNIQUE
 );
