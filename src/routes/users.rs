@@ -23,7 +23,7 @@ fn _routes() -> Router {
         .route("/", post(create_user))
         .route("/", get(get_users))
         .route("/bind", post(bind_wallet_address))
-        .route("/finish",post(finish_task))
+        .route("/finish", post(finish_task))
 }
 
 async fn create_user(
@@ -51,8 +51,8 @@ async fn get_users(Extension(state): Extension<Arc<AppState>>) -> impl IntoRespo
 
 async fn finish_task(
     Extension(state): Extension<Arc<AppState>>,
-    Json(finish_task_dto):Json<FinishTaskDTO>
+    Json(finish_task_dto): Json<FinishTaskDTO>,
 ) -> impl IntoResponse {
-    _finish_task(&state.db,finish_task_dto).await.unwrap();
+    _finish_task(&state.db, finish_task_dto).await.unwrap();
     (StatusCode::OK).into_response()
 }

@@ -1,6 +1,6 @@
 mod dbg;
-mod users;
 mod tasks;
+mod users;
 
 use axum::Router;
 
@@ -11,8 +11,8 @@ pub fn routes() -> Router {
 fn _routes() -> Router {
     let mut router = Router::new();
     router = router
-            .merge(dbg::routes())
-            .merge(users::routes())
-            .merge(tasks::routes());
+        .merge(dbg::routes())
+        .merge(users::routes())
+        .merge(tasks::routes());
     router
 }

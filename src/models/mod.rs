@@ -1,7 +1,7 @@
 mod dto;
-mod users;
 mod tasks;
+mod users;
 
 pub use dto::*;
-pub use users::*;
 pub use tasks::*;
+pub use users::*;

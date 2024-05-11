@@ -1,4 +1,7 @@
-use crate::{db::Database, models::{BindWalletAddressDTO, CreateUserDTO, FinishTaskDTO, User}};
+use crate::{
+    db::Database,
+    models::{BindWalletAddressDTO, CreateUserDTO, FinishTaskDTO, User},
+};
 
 use chrono::prelude::*;
 
@@ -47,7 +50,7 @@ pub async fn _get_users(db: &Database) -> Result<Vec<User>, sqlx::Error> {
 
 pub async fn _finish_task(
     db: &Database,
-    finish_task_dto:FinishTaskDTO
+    finish_task_dto: FinishTaskDTO,
 ) -> Result<(), sqlx::Error> {
     // This can be optimized. We dont need to query all!
     let mut user: User = sqlx::query_as("SELECT id, wallet_address, twitter_id, referral_code, total_points, finished_tasks, referral_points FROM users WHERE id = $1")
@@ -58,8 +61,8 @@ pub async fn _finish_task(
     // Check if the task is already finished
     if !user.finished_tasks.contains(&finish_task_dto.task_id) {
         // This also checks if tasks exists
-        let points_to_add = _get_points_for_task(db,finish_task_dto.task_id).await?; 
-        
+        let points_to_add = _get_points_for_task(db, finish_task_dto.task_id).await?;
+
         // Add the task to the finished tasks
         user.finished_tasks.push(finish_task_dto.task_id);
 

@@ -1,9 +1,18 @@
 use std::sync::Arc;
 
-use axum::{http::StatusCode, response::IntoResponse, routing::{get, post}, Extension, Json, Router};
+use axum::{
+    http::StatusCode,
+    response::IntoResponse,
+    routing::{get, post},
+    Extension, Json, Router,
+};
 use serde_json::json;
 
-use crate::{db::{_create_task, _get_tasks}, models::CreateTaskDTO, state::AppState};
+use crate::{
+    db::{_create_task, _get_tasks},
+    models::CreateTaskDTO,
+    state::AppState,
+};
 
 pub fn routes() -> Router {
     Router::new().nest("/tasks", _routes())

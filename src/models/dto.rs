@@ -11,15 +11,14 @@ pub struct BindWalletAddressDTO {
     pub wallet_address: String,
 }
 
-
-#[derive(Debug,Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct CreateTaskDTO {
-    pub description:String,
-    pub points:i32
+    pub description: String,
+    pub points: i32,
 }
 
-#[derive(Debug,Deserialize)]
-pub struct FinishTaskDTO{
-    pub user_id:i32,
-    pub task_id:i32
+#[derive(Debug, Deserialize)]
+pub struct FinishTaskDTO {
+    pub user_id: i32,
+    pub task_id: i32,
 }

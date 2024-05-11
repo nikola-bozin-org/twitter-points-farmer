@@ -1,16 +1,17 @@
-use crate::{db::Database, models::{CreateTaskDTO, TaskPoints, Tasks}};
+use crate::{
+    db::Database,
+    models::{CreateTaskDTO, TaskPoints, Tasks},
+};
 
 pub async fn _create_task(
     db: &Database,
     create_task_dto: CreateTaskDTO,
 ) -> Result<(), sqlx::Error> {
-    sqlx::query(
-        "INSERT INTO tasks (description, points) VALUES ($1, $2)",
-    )
-    .bind(create_task_dto.description)
-    .bind(create_task_dto.points)
-    .execute(db)
-    .await?;
+    sqlx::query("INSERT INTO tasks (description, points) VALUES ($1, $2)")
+        .bind(create_task_dto.description)
+        .bind(create_task_dto.points)
+        .execute(db)
+        .await?;
     Ok(())
 }
 
