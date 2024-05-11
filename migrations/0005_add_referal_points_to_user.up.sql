@@ -1,0 +1,2 @@
+ALTER TABLE users
+ADD COLUMN referral_points INTEGER DEFAULT 0;

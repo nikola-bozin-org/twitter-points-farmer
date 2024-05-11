@@ -9,8 +9,8 @@ use axum::{
 use serde_json::json;
 
 use crate::{
-    db::{_bind_wallet_address, _create_user, _get_users},
-    models::{BindWalletAddressDTO, CreateUserDTO},
+    db::{_bind_wallet_address, _create_user, _finish_task, _get_users},
+    models::{BindWalletAddressDTO, CreateUserDTO, FinishTaskDTO},
     state::AppState,
 };
 
@@ -23,6 +23,7 @@ fn _routes() -> Router {
         .route("/", post(create_user))
         .route("/", get(get_users))
         .route("/bind", post(bind_wallet_address))
+        .route("/finish",post(finish_task))
 }
 
 async fn create_user(
@@ -46,4 +47,12 @@ async fn bind_wallet_address(
 async fn get_users(Extension(state): Extension<Arc<AppState>>) -> impl IntoResponse {
     let users = _get_users(&state.db).await.unwrap();
     (StatusCode::OK, Json(json!({ "users": users })))
+}
+
+async fn finish_task(
+    Extension(state): Extension<Arc<AppState>>,
+    Json(finish_task_dto):Json<FinishTaskDTO>
+) -> impl IntoResponse {
+    _finish_task(&state.db,finish_task_dto).await.unwrap();
+    (StatusCode::OK).into_response()
 }

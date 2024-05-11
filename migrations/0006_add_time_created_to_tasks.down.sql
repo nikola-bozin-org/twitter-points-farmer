@@ -1,0 +1,2 @@
+ALTER TABLE tasks
+DROP COLUMN IF EXISTS time_created;

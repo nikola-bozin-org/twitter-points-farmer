@@ -7,4 +7,7 @@ pub struct User {
     pub wallet_address: Option<String>,
     pub twitter_id: String,
     pub referral_code: i32,
+    pub total_points:i32,
+    pub finished_tasks: Vec<i32>,
+    pub referral_points: i32
 }
