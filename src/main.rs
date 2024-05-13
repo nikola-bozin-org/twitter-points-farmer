@@ -17,11 +17,14 @@ async fn main() {
     let database_url = env::var("DATABASE_URL")
         .unwrap_or_else(|_| panic!("Missing required environment variable: {}", "DATABASE_URL"));
 
+    let dev_secret = env::var("DEV_SECRET")
+         .unwrap_or_else(|_|panic!("Missing required environment variable: {}", "DEV_SECRET"));
+
     let db = connect(database_url.as_str()).await.unwrap();
 
     sqlx::migrate!("./migrations").run(&db).await.unwrap();
 
-    let state = AppState { db: db.clone() };
+    let state = AppState { db: db.clone() ,dev_secret};
 
     let shared_state = Arc::new(state);
 

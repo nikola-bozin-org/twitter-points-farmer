@@ -16,7 +16,8 @@ pub struct BindWalletAddressDTO {
 pub struct CreateTaskDTO {
     pub description: String,
     pub points: i32,
-    pub link:Option<String>
+    pub link:Option<String>,
+    pub dev_secret:Option<String>
 }
 
 #[derive(Debug, Deserialize)]
