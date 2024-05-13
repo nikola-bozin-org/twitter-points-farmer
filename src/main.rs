@@ -1,5 +1,6 @@
 mod constants;
 mod db;
+mod middlewares;
 mod models;
 mod routes;
 mod state;

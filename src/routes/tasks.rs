@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use axum::{
     http::StatusCode,
+    middleware,
     response::IntoResponse,
     routing::{get, post},
     Extension, Json, Router,
@@ -10,6 +11,7 @@ use serde_json::json;
 
 use crate::{
     db::{_create_task, _get_tasks},
+    middlewares::require_auth,
     models::CreateTaskDTO,
     state::AppState,
 };
@@ -20,8 +22,9 @@ pub fn routes() -> Router {
 
 fn _routes() -> Router {
     Router::new()
-        .route("/", get(get_tasks))
         .route("/", post(create_task))
+        .layer(middleware::from_fn(require_auth))
+        .route("/", get(get_tasks))
 }
 
 async fn get_tasks(Extension(state): Extension<Arc<AppState>>) -> impl IntoResponse {
@@ -33,14 +36,6 @@ async fn create_task(
     Extension(state): Extension<Arc<AppState>>,
     Json(create_task_dto): Json<CreateTaskDTO>,
 ) -> impl IntoResponse {
-    let dev_secret = create_task_dto.dev_secret.clone();
-
-    if dev_secret.is_none() {
-        return (StatusCode::BAD_REQUEST, "Bad Request").into_response();
-    }
-    if dev_secret.unwrap() != state.dev_secret {
-        return (StatusCode::BAD_REQUEST, "Bad Request").into_response();
-    }
     _create_task(&state.db, create_task_dto).await.unwrap();
     (StatusCode::OK).into_response()
 }
