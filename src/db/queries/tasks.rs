@@ -1,6 +1,6 @@
 use crate::{
     db::Database,
-    models::{CreateTaskDTO, DeleteTaskDTO, TaskPoints, Tasks},
+    models::{CreateTaskDTO, DeleteTaskDTO, TaskPoints, Task, PutTaskDTO},
 };
 
 pub async fn _create_task(
@@ -32,8 +32,8 @@ pub async fn _delete_task(
     Ok(())
 }
 
-pub async fn _get_tasks(db: &Database) -> Result<Vec<Tasks>, sqlx::Error> {
-    let tasks: Vec<Tasks> =
+pub async fn _get_tasks(db: &Database) -> Result<Vec<Task>, sqlx::Error> {
+    let tasks: Vec<Task> =
         sqlx::query_as("SELECT id, description, points, time_created, link FROM tasks")
             .fetch_all(db)
             .await?;
@@ -46,4 +46,37 @@ pub async fn _get_points_for_task(db: &Database, task_id: i32) -> Result<i32, sq
         .fetch_one(db)
         .await?;
     Ok(task.points)
+}
+
+pub async fn _put_task(db: &Database, put_task_dto: PutTaskDTO) -> Result<(), sqlx::Error> {
+    let mut description = put_task_dto.description;
+    let mut points = put_task_dto.points;
+    let mut link = put_task_dto.link;
+
+    let task = sqlx::query_as::<_, Task>("SELECT id, description, time_created, points, link FROM tasks WHERE id = $1")
+        .bind(put_task_dto.task_id)
+        .fetch_one(db)
+        .await?;
+
+    if description.is_none() {
+        description = Some(task.description);
+    }
+
+    if points.is_none() {
+        points = Some(task.points);
+    }
+
+    if link.is_none() {
+        link = Some(task.link.unwrap_or_default());
+    }
+
+    sqlx::query("UPDATE tasks SET description = $1, points = $2, link = $3 WHERE id = $4")
+        .bind(description)
+        .bind(points)
+        .bind(link)
+        .bind(put_task_dto.task_id)
+        .execute(db)
+        .await?;
+
+    Ok(())
 }

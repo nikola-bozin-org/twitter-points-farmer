@@ -17,3 +17,11 @@ pub struct FinishTaskDTO {
 pub struct DeleteTaskDTO{
     pub task_id:i32
 }
+
+#[derive(Debug,Deserialize)]
+pub struct PutTaskDTO{
+    pub task_id:i32,
+    pub description: Option<String>,
+    pub points: Option<i32>,
+    pub link: Option<String>
+}
