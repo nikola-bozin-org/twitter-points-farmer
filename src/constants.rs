@@ -1,1 +1,1 @@
-pub const REFERRAL_BONUS_PRECENT:u16 = 20;
+pub const REFERRAL_BONUS_PRECENT: u16 = 20;

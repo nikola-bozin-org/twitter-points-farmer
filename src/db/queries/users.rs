@@ -22,8 +22,10 @@ pub async fn _create_user(
     .fetch_one(db)
     .await?;
 
-    if create_user_dto.reffer_code.is_some(){
-        let result_refered = _get_user_by_referral_code(db,create_user_dto.reffer_code.unwrap()).await.unwrap();
+    if create_user_dto.reffer_code.is_some() {
+        let result_refered = _get_user_by_referral_code(db, create_user_dto.reffer_code.unwrap())
+            .await
+            .unwrap();
         match result_refered {
             Some(user) => {
                 let mut referred_by = user.referred_by.clone();
@@ -40,7 +42,7 @@ pub async fn _create_user(
                     .bind(result.0)
                     .execute(db)
                     .await?;
-            },
+            }
             None => {
                 // TODO
                 // If the referrer user does not exist, rollback the transaction and return an error?
@@ -95,7 +97,8 @@ pub async fn _finish_task(
         // This also checks if tasks exists
         let points_to_add = _get_points_for_task(db, finish_task_dto.task_id).await?;
 
-        let points_for_referral = points_to_add * crate::constants::REFERRAL_BONUS_PRECENT as i32 / 100;
+        let points_for_referral =
+            points_to_add * crate::constants::REFERRAL_BONUS_PRECENT as i32 / 100;
         // Add the task to the finished tasks
         user.finished_tasks.push(finish_task_dto.task_id);
 
@@ -115,23 +118,25 @@ pub async fn _finish_task(
         .fetch_one(db)
         .await?;
 
-    user_referral.total_points += points_for_referral;
-    user_referral.referral_points+=points_for_referral;
+        user_referral.total_points += points_for_referral;
+        user_referral.referral_points += points_for_referral;
 
-    sqlx::query("UPDATE users SET total_points = $1, referral_points = $2 WHERE id = $3")
-    .bind(user_referral.total_points)
-    .bind(user_referral.referral_points)
-    .bind(user_referral.id)
-    .execute(db)
-    .await?;
+        sqlx::query("UPDATE users SET total_points = $1, referral_points = $2 WHERE id = $3")
+            .bind(user_referral.total_points)
+            .bind(user_referral.referral_points)
+            .bind(user_referral.id)
+            .execute(db)
+            .await?;
     }
     // TODO: Should return error to client if task does not exist or already finished.
 
     Ok(())
 }
 
-
-pub async fn _get_user_by_referral_code(db: &Database, referral_code: i32) -> Result<Option<User>, sqlx::Error> {
+pub async fn _get_user_by_referral_code(
+    db: &Database,
+    referral_code: i32,
+) -> Result<Option<User>, sqlx::Error> {
     let user: Option<User> =
         sqlx::query_as("SELECT id, wallet_address, twitter_id, referral_code, total_points, finished_tasks, referral_points, referred_by, referrer_id FROM users WHERE referral_code = $1")
             .bind(referral_code)
@@ -159,8 +164,9 @@ mod tests {
     #[tokio::test]
     async fn test_get_user_by_referral_code() {
         dotenv::dotenv().ok();
-        let database_url = env::var("DATABASE_URL")
-        .unwrap_or_else(|_| panic!("Missing required environment variable: {}", "DATABASE_URL"));
+        let database_url = env::var("DATABASE_URL").unwrap_or_else(|_| {
+            panic!("Missing required environment variable: {}", "DATABASE_URL")
+        });
 
         let pool = PgPoolOptions::new()
             .max_connections(5) // Limit connections to avoid concurrency issues
@@ -168,10 +174,15 @@ mod tests {
             .await
             .expect("Failed to create pool");
 
-        let id = _create_user(&pool,CreateUserDTO{
-            twitter_id:"123".to_string(),
-            reffer_code:None
-        }).await.unwrap();
+        let id = _create_user(
+            &pool,
+            CreateUserDTO {
+                twitter_id: "123".to_string(),
+                reffer_code: None,
+            },
+        )
+        .await
+        .unwrap();
 
         let user_id = id;
 

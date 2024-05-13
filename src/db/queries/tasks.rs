@@ -16,6 +16,11 @@ pub async fn _create_task(
     Ok(())
 }
 
+// pub async fn _delete_task(
+//     db: &Database,
+
+// )
+
 pub async fn _get_tasks(db: &Database) -> Result<Vec<Tasks>, sqlx::Error> {
     let tasks: Vec<Tasks> =
         sqlx::query_as("SELECT id, description, points, time_created, link FROM tasks")

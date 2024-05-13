@@ -36,10 +36,10 @@ async fn create_task(
     let dev_secret = create_task_dto.dev_secret.clone();
 
     if dev_secret.is_none() {
-        return (StatusCode::BAD_REQUEST,"Bad Request").into_response()
+        return (StatusCode::BAD_REQUEST, "Bad Request").into_response();
     }
     if dev_secret.unwrap() != state.dev_secret {
-        return (StatusCode::BAD_REQUEST,"Bad Request").into_response()
+        return (StatusCode::BAD_REQUEST, "Bad Request").into_response();
     }
     _create_task(&state.db, create_task_dto).await.unwrap();
     (StatusCode::OK).into_response()
