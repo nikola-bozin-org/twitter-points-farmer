@@ -12,3 +12,8 @@ pub struct FinishTaskDTO {
     pub user_id: i32,
     pub task_id: i32,
 }
+
+#[derive(Debug,Deserialize)]
+pub struct DeleteTaskDTO{
+    pub task_id:i32
+}

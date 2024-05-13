@@ -1,6 +1,6 @@
 use crate::{
     db::Database,
-    models::{CreateTaskDTO, TaskPoints, Tasks},
+    models::{CreateTaskDTO, DeleteTaskDTO, TaskPoints, Tasks},
 };
 
 pub async fn _create_task(
@@ -16,10 +16,21 @@ pub async fn _create_task(
     Ok(())
 }
 
-// pub async fn _delete_task(
-//     db: &Database,
+pub async fn _delete_task(
+    db: &Database,
+    delete_task_dto: DeleteTaskDTO,
+) -> Result<(), sqlx::Error> {
+    let result = sqlx::query("DELETE FROM tasks WHERE id = $1")
+        .bind(delete_task_dto.task_id)
+        .execute(db)
+        .await?;
+    
+    if result.rows_affected() == 0 {
+        return Err(sqlx::Error::RowNotFound);
+    }
 
-// )
+    Ok(())
+}
 
 pub async fn _get_tasks(db: &Database) -> Result<Vec<Tasks>, sqlx::Error> {
     let tasks: Vec<Tasks> =
