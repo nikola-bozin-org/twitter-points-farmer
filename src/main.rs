@@ -21,6 +21,9 @@ async fn main() {
     let dev_secret = env::var("DEV_SECRET")
         .unwrap_or_else(|_| panic!("Missing required environment variable: {}", "DEV_SECRET"));
 
+    let security_hash = env::var("SECURITY_HASH")
+        .unwrap_or_else(|_| panic!("Missing required environment variable: {}", "SECURITY_HASH"));
+
     let db = connect(database_url.as_str()).await.unwrap();
 
     sqlx::migrate!("./migrations").run(&db).await.unwrap();
@@ -28,6 +31,7 @@ async fn main() {
     let state = AppState {
         db: db.clone(),
         dev_secret,
+        security_hash
     };
 
     let shared_state = Arc::new(state);
