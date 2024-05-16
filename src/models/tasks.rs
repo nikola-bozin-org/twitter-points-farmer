@@ -9,6 +9,7 @@ pub struct Task {
     pub points: i32,
     pub time_created: DateTime<Utc>, // ISO 8601
     pub link: Option<String>,
+    pub task_button_text: Option<String>
 }
 
 #[derive(Debug, FromRow, Serialize)]

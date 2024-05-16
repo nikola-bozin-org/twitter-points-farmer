@@ -4,6 +4,7 @@ use serde::Deserialize;
 pub struct CreateTaskDTO {
     pub description: String,
     pub points: i32,
+    pub task_button_text:String,
     pub link: Option<String>,
 }
 
