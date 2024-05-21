@@ -10,18 +10,20 @@ use super::_get_points_for_task;
 pub async fn _create_user(
     db: &Database,
     create_user_dto: CreateUserDTO,
-) -> Result<i32, sqlx::Error> {
+) -> Result<(i32,i64), sqlx::Error> {
     let tx = db.begin().await?;
 
     let referral_code = Utc::now().timestamp();
-    let result = sqlx::query_as::<_, (i32,)>(
-        "INSERT INTO users (twitter_id, referral_code) values ($1,$2) RETURNING id",
+    let create_user_result = sqlx::query_as::<_, (i32,)>(
+        "INSERT INTO users (twitter_id, referral_code, wallet_address) values ($1,$2,$3) RETURNING id",
     )
     .bind(create_user_dto.twitter_id)
     .bind(referral_code)
+    .bind(create_user_dto.solana_adr)
     .fetch_one(db)
     .await?;
 
+    // someone referred the user and this is his code.
     if create_user_dto.reffer_code.is_some() {
         let result_refered = _get_user_by_referral_code(db, create_user_dto.reffer_code.unwrap())
             .await
@@ -29,7 +31,7 @@ pub async fn _create_user(
         match result_refered {
             Some(user) => {
                 let mut referred_by = user.referred_by.clone();
-                referred_by.push(result.0);
+                referred_by.push(create_user_result.0);
 
                 sqlx::query("UPDATE users SET referred_by = $1 WHERE id = $2")
                     .bind(&referred_by)
@@ -39,7 +41,7 @@ pub async fn _create_user(
 
                 sqlx::query("UPDATE users SET referrer_id = $1 WHERE id = $2")
                     .bind(user.id)
-                    .bind(result.0)
+                    .bind(create_user_result.0)
                     .execute(db)
                     .await?;
             }
@@ -47,13 +49,13 @@ pub async fn _create_user(
                 // TODO
                 // If the referrer user does not exist, rollback the transaction and return an error?
                 // tx.rollback().await?;
-                return Ok(result.0);
+                return Ok((create_user_result.0,referral_code));
             }
         }
     }
     tx.commit().await?;
 
-    Ok(result.0)
+    Ok((create_user_result.0,referral_code))
 }
 
 pub async fn _bind_wallet_address(
@@ -174,19 +176,20 @@ mod tests {
             .await
             .expect("Failed to create pool");
 
-        let id = _create_user(
+        let create_user_return_type: (i32, i64) = _create_user(
             &pool,
             CreateUserDTO {
                 twitter_id: "123".to_string(),
                 reffer_code: None,
+                solana_adr:"123".to_string()
             },
         )
         .await
         .unwrap();
 
-        let user_id = id;
+        let user_id = create_user_return_type.0;
 
-        let user = _get_user_by_id(&pool, id).await.unwrap().unwrap();
+        let user = _get_user_by_id(&pool, create_user_return_type.0).await.unwrap().unwrap();
 
         let user = _get_user_by_referral_code(&pool, user.referral_code)
             .await

@@ -26,8 +26,11 @@ async fn create_user(
     Extension(state): Extension<Arc<AppState>>,
     Json(create_user_dto): Json<CreateUserDTO>,
 ) -> impl IntoResponse {
-    let id = _create_user(&state.db, create_user_dto).await.unwrap();
-    (StatusCode::OK, id.to_string())
+    let id_and_ref_code: (i32, i64) = _create_user(&state.db, create_user_dto).await.unwrap();
+    (StatusCode::OK, Json(json!({
+        "id":id_and_ref_code.0,
+        "refcode":id_and_ref_code.1
+    })))
 }
 
 async fn bind_wallet_address(
