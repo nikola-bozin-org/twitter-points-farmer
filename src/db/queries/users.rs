@@ -1,31 +1,35 @@
 use crate::{
     db::Database,
-    models::{BindWalletAddressDTO, CreateUserDTO, FinishTaskDTO, User},
+    models::{BindWalletAddressDTO, CreateUserDTO, FinishTaskDTO, User}, password::encrypt_password,
 };
 
 use chrono::prelude::*;
+use password_encryptor::PasswordEncryptor;
 
 use super::_get_points_for_task;
 
 pub async fn _create_user(
     db: &Database,
     create_user_dto: CreateUserDTO,
-) -> Result<(i32,i64), sqlx::Error> {
+    password_encryptor: PasswordEncryptor,
+    salt: &str
+) -> Result<User, sqlx::Error> {
     let tx = db.begin().await?;
 
+    let encrypted_password = encrypt_password(&password_encryptor, create_user_dto.password.as_str(), salt);
     let referral_code = Utc::now().timestamp();
     let create_user_result = sqlx::query_as::<_, (i32,)>(
-        "INSERT INTO users (twitter_id, referral_code, wallet_address) values ($1,$2,$3) RETURNING id",
+        "INSERT INTO users (twitter_id, referral_code, wallet_address, encrypted_password) values ($1, $2, $3, $4) RETURNING id",
     )
     .bind(create_user_dto.twitter_id)
     .bind(referral_code)
     .bind(create_user_dto.solana_adr)
+    .bind(encrypted_password)
     .fetch_one(db)
     .await?;
 
-    // someone referred the user and this is his code.
-    if create_user_dto.reffer_code.is_some() {
-        let result_refered = _get_user_by_referral_code(db, create_user_dto.reffer_code.unwrap())
+    if let Some(ref_code) = create_user_dto.reffer_code {
+        let result_refered = _get_user_by_referral_code(db, ref_code)
             .await
             .unwrap();
         match result_refered {
@@ -46,18 +50,28 @@ pub async fn _create_user(
                     .await?;
             }
             None => {
-                // TODO
-                // If the referrer user does not exist, rollback the transaction and return an error?
-                // tx.rollback().await?;
-                return Ok((create_user_result.0,referral_code));
+                let user = sqlx::query_as::<_, User>(
+                    "SELECT id, wallet_address, twitter_id, referral_code, total_points, finished_tasks, referral_points, referred_by, referrer_id FROM users WHERE id = $1"
+                )
+                .bind(create_user_result.0)
+                .fetch_one(db)
+                .await?;
+                tx.rollback().await?;
+                return Ok(user);
             }
         }
     }
     tx.commit().await?;
 
-    Ok((create_user_result.0,referral_code))
-}
+    let user = sqlx::query_as::<_, User>(
+        "SELECT id, wallet_address, twitter_id, referral_code, total_points, finished_tasks, referral_points, referred_by, referrer_id FROM users WHERE id = $1"
+    )
+    .bind(create_user_result.0)
+    .fetch_one(db)
+    .await?;
 
+    Ok(user)
+}
 pub async fn _bind_wallet_address(
     db: &Database,
     bind_wallet_address: BindWalletAddressDTO,
@@ -176,20 +190,23 @@ mod tests {
             .await
             .expect("Failed to create pool");
 
-        let create_user_return_type: (i32, i64) = _create_user(
+        let create_user_return_type: User = _create_user(
             &pool,
             CreateUserDTO {
                 twitter_id: "123".to_string(),
                 reffer_code: None,
-                solana_adr:"123".to_string()
+                solana_adr:"123".to_string(),
+                password:"123".to_string()
             },
+            PasswordEncryptor::new(vec![1,2,3],None),
+            "salt"
         )
         .await
         .unwrap();
 
-        let user_id = create_user_return_type.0;
+        let user_id = create_user_return_type.id;
 
-        let user = _get_user_by_id(&pool, create_user_return_type.0).await.unwrap().unwrap();
+        let user = _get_user_by_id(&pool, create_user_return_type.id).await.unwrap().unwrap();
 
         let user = _get_user_by_referral_code(&pool, user.referral_code)
             .await

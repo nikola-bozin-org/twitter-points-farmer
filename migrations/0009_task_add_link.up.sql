@@ -1,2 +1,0 @@
-ALTER TABLE tasks
-ADD COLUMN link VARCHAR(120);

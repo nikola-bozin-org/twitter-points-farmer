@@ -4,8 +4,11 @@ mod middlewares;
 mod models;
 mod routes;
 mod state;
+mod jwt;
+mod password;
 
 use axum::{Extension, Router};
+use password_encryptor::PasswordEncryptor;
 use std::{env, sync::Arc};
 use tokio::net::TcpListener;
 
@@ -24,14 +27,27 @@ async fn main() {
     let security_hash = env::var("SECURITY_HASH")
         .unwrap_or_else(|_| panic!("Missing required environment variable: {}", "SECURITY_HASH"));
 
+    let encryption_key = env::var("JWT_SECRET")
+        .unwrap_or_else(|_| panic!("Missing required environment variable: SECURITY_HASH"));
+
+    let salt = env::var("SALT")
+    .unwrap_or_else(|_| panic!("Missing required environment variable: SECURITY_HASH"));
+
+    let encoding_key = jwt::init_encoding_key(&encryption_key).unwrap();
+
     let db = connect(database_url.as_str()).await.unwrap();
 
     sqlx::migrate!("./migrations").run(&db).await.unwrap();
+   
+    let password_encryptor = PasswordEncryptor::new(encryption_key.as_bytes().to_vec(), None);
 
     let state = AppState {
         db: db.clone(),
         dev_secret,
-        security_hash
+        security_hash,
+        password_encryptor,
+        salt,
+        encoding_key
     };
 
     let shared_state = Arc::new(state);
