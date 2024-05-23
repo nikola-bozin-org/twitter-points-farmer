@@ -170,6 +170,17 @@ pub async fn _get_user_by_id(db: &Database, id: i32) -> Result<Option<User>, sql
     Ok(user)
 }
 
+pub async fn _delete_user_by_id(db: &Database, twitter_id: &str) -> Result<u64, sqlx::Error> {
+    let rows_affected = sqlx::query("DELETE FROM users WHERE twitter_id = $1")
+        .bind(twitter_id)
+        .execute(db)
+        .await?
+        .rows_affected();
+    Ok(rows_affected)
+}
+
+
+
 #[cfg(test)]
 mod tests {
     use std::env;
@@ -193,9 +204,9 @@ mod tests {
         let create_user_return_type: User = _create_user(
             &pool,
             CreateUserDTO {
-                twitter_id: "123".to_string(),
+                twitter_id: "123".to_string() + chrono::Local::now().to_string().as_str(),
                 reffer_code: None,
-                solana_adr:"123".to_string(),
+                solana_adr:"123".to_string() + chrono::Local::now().to_string().as_str(),
                 password:"123".to_string()
             },
             PasswordEncryptor::new(vec![1,2,3],None),
@@ -213,5 +224,27 @@ mod tests {
             .expect("Failed to get user");
 
         assert_eq!(user.unwrap().id, user_id);
+    }
+
+    #[tokio::test]
+    async fn test_delete_user_by_id() {
+        dotenv::dotenv().ok();
+        let database_url = env::var("DATABASE_URL").unwrap_or_else(|_| {
+            panic!("Missing required environment variable: {}", "DATABASE_URL")
+        });
+
+        let pool = PgPoolOptions::new()
+            .max_connections(5) // Limit connections to avoid concurrency issues
+            .connect(database_url.as_str())
+            .await
+            .expect("Failed to create pool");
+
+        let user_id = "nb_crypto";
+
+        let rows_affected = _delete_user_by_id(&pool, user_id)
+            .await
+            .expect("Failed to delete user");
+        
+        assert_eq!(rows_affected, 1);
     }
 }

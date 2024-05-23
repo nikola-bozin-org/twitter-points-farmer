@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
 use axum::{
-    http::StatusCode, middleware, response::IntoResponse, routing::{get, post}, Extension, Json, Router
+    extract::Path, http::{StatusCode}, middleware, response::IntoResponse, routing::{get, post}, Extension, Json, Router
 };
 use serde_json::json;
 
 use crate::{
-    db::{_bind_wallet_address, _create_user, _finish_task, _get_users}, jwt::{generate_jwt, Claims}, middlewares::{require_auth_jwt, require_security_hash}, models::{BindWalletAddressDTO, CreateUserDTO, FinishTaskDTO, User}, state::AppState
+    db::{_bind_wallet_address, _create_user, _finish_task, _get_users}, jwt::{generate_jwt, Claims}, middlewares::{require_auth_jwt, require_security_hash}, models::{BindWalletAddressDTO, CreateUserDTO, FinishTaskDTO}, state::AppState
 };
 
 pub fn routes() -> Router {

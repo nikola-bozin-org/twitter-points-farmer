@@ -7,8 +7,9 @@ mod state;
 mod jwt;
 mod password;
 
-use axum::{Extension, Router};
+use axum::{http::Method, Extension, Router};
 use password_encryptor::PasswordEncryptor;
+use tower_http::cors::CorsLayer;
 use std::{env, sync::Arc};
 use tokio::net::TcpListener;
 
@@ -33,6 +34,18 @@ async fn main() {
     let salt = env::var("SALT")
     .unwrap_or_else(|_| panic!("Missing required environment variable: SECURITY_HASH"));
 
+
+    let cors = CorsLayer::new()
+    .allow_methods([Method::GET,Method::POST,Method::PUT,Method::DELETE])
+    .allow_origin(["http://localhost:3000".parse().unwrap()])
+    .allow_headers([
+        "Content-Type".parse().unwrap(),
+        "Authoriaztion".parse().unwrap(),
+        "Access-Control-Allow-Origin".parse().unwrap(),
+        "X-Security-Hash".parse().unwrap()
+    ])
+    .allow_credentials(true);
+    
     let encoding_key = jwt::init_encoding_key(&encryption_key).unwrap();
 
     let db = connect(database_url.as_str()).await.unwrap();
@@ -60,6 +73,7 @@ async fn main() {
 
     let router = Router::new()
         .nest("/api/v1", routes::routes())
+        .layer(cors)
         .layer(Extension(shared_state));
 
     axum::serve(listener, router).await.unwrap()

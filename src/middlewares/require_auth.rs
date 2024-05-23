@@ -5,12 +5,13 @@ use axum::{
     http::StatusCode,
     middleware::Next,
     response::{IntoResponse, Response},
-    Extension,
+    Extension, Json,
 };
 use axum_extra::{
     headers::{authorization::Bearer, Authorization},
     TypedHeader,
 };
+use serde_json::json;
 
 use crate::state::AppState;
 
@@ -22,7 +23,9 @@ pub async fn require_auth(
 ) -> Response {
     let dev_secret = authorization_token.token();
     if dev_secret != state.dev_secret {
-        return (StatusCode::UNAUTHORIZED, "Unauthorized").into_response();
+        return (StatusCode::UNAUTHORIZED, Json(json!({
+            "error":"Unauthorized"
+        }))).into_response();
     }
     next.run(req).await
 }
