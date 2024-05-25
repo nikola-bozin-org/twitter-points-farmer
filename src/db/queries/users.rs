@@ -1,6 +1,6 @@
 use crate::{
     db::Database,
-    models::{BindWalletAddressDTO, CreateUserDTO, FinishTaskDTO, User}, password::encrypt_password,
+    models::{BindWalletAddressDTO, CreateUserDTO, FinishTaskDTO, User, UserWithEncryptedPassword}, password::encrypt_password,
 };
 
 use chrono::prelude::*;
@@ -170,13 +170,22 @@ pub async fn _get_user_by_id(db: &Database, id: i32) -> Result<Option<User>, sql
     Ok(user)
 }
 
-pub async fn _delete_user_by_id(db: &Database, twitter_id: &str) -> Result<u64, sqlx::Error> {
+pub async fn _delete_user_by_twitter_id(db: &Database, twitter_id: &str) -> Result<u64, sqlx::Error> {
     let rows_affected = sqlx::query("DELETE FROM users WHERE twitter_id = $1")
         .bind(twitter_id)
         .execute(db)
         .await?
         .rows_affected();
     Ok(rows_affected)
+}
+
+pub async fn _get_user_by_twitter_id(db: &Database, twitter_id: &str) -> Result<Option<UserWithEncryptedPassword>, sqlx::Error> {
+    let user = sqlx::query_as::<_, UserWithEncryptedPassword>("SELECT * FROM users WHERE twitter_id = $1")
+        .bind(twitter_id)
+        .fetch_optional(db)
+        .await?;
+    
+    Ok(user)
 }
 
 
@@ -241,7 +250,7 @@ mod tests {
 
         let user_id = "nb_crypto";
 
-        let rows_affected = _delete_user_by_id(&pool, user_id)
+        let rows_affected = _delete_user_by_twitter_id(&pool, user_id)
             .await
             .expect("Failed to delete user");
         

@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
 use axum::{
-    extract::Path, http::{StatusCode}, middleware, response::IntoResponse, routing::{get, post}, Extension, Json, Router
+   http::StatusCode, middleware, response::IntoResponse, routing::{get, post}, Extension, Json, Router
 };
 use serde_json::json;
 
 use crate::{
-    db::{_bind_wallet_address, _create_user, _finish_task, _get_users}, jwt::{generate_jwt, Claims}, middlewares::{require_auth_jwt, require_security_hash}, models::{BindWalletAddressDTO, CreateUserDTO, FinishTaskDTO}, state::AppState
+    db::{_bind_wallet_address, _create_user, _finish_task, _get_user_by_twitter_id, _get_users}, jwt::{generate_jwt, Claims}, middlewares::{require_auth_jwt, require_security_hash}, models::{BindWalletAddressDTO, CreateUserDTO, FinishTaskDTO, LoginUserDTO, User}, password::validate_password, state::AppState
 };
 
 pub fn routes() -> Router {
@@ -19,6 +19,7 @@ fn _routes() -> Router {
         .route("/bind", post(bind_wallet_address))
         .route("/finish", post(finish_task))
         .layer(middleware::from_fn(require_auth_jwt))
+        .route("/login", post(login_user))
         .route("/", post(create_user))
         .layer(middleware::from_fn(require_security_hash))
 }
@@ -72,7 +73,73 @@ async fn create_user(
 }
 
 
-async fn login_user(){
+async fn login_user(
+    Extension(state): Extension<Arc<AppState>>,
+    Json(login_user_dto): Json<LoginUserDTO>
+) -> impl IntoResponse {
+    let user = _get_user_by_twitter_id(&state.db, login_user_dto.twitter_id.as_str()).await;
+    match user {
+        Ok(user) => match user {
+            Some(user) => {
+                if user.wallet_address != login_user_dto.solana_adr {
+                    (StatusCode::BAD_REQUEST, "Bad credentials").into_response()
+                } else {
+                    let is_password_valid = validate_password(
+                        &state.password_encryptor.clone(),
+                        &login_user_dto.password,
+                        &user.encrypted_password,
+                        &state.salt,
+                    );
+                    if !is_password_valid {
+                        (StatusCode::BAD_REQUEST, "Bad credentials").into_response()
+                    } else {
+                        let claims = Claims::new(
+                            user.id,
+                            user.twitter_id.clone(),
+                            user.wallet_address.clone(),
+                            user.total_points,
+                            user.referred_by.len() as u32,
+                            user.referral_points,
+                            user.referral_code,
+                        );
+                        match generate_jwt(claims, &state.encoding_key) {
+                            Ok(jwt) => {
+                                let public_user:User = user.into();
+                                (
+                                    StatusCode::OK,
+                                    Json(json!({
+                                        "user": public_user,
+                                        "jwt": jwt
+                                    })),
+                                )
+                                    .into_response()
+                            }
+                            Err(err) => {
+                                println!("Failed to generate JWT: {}", err);
+                                (
+                                    StatusCode::BAD_REQUEST,
+                                    Json(json!({
+                                        "error": "Bad Request"
+                                    })),
+                                )
+                                    .into_response()
+                            }
+                        }
+                    }
+                }
+            }
+            None => {
+                (StatusCode::BAD_REQUEST, "Bad credentials").into_response()
+            }
+        },
+        Err(_) => {
+            (
+                StatusCode::BAD_REQUEST,
+                "Something went wrong.",
+            )
+                .into_response()
+        }
+    }
 }
 
 async fn bind_wallet_address(
