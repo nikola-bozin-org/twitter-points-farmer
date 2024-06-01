@@ -1,19 +1,21 @@
 use crate::{
     db::Database,
-    models::{CreateTaskDTO, DeleteTaskDTO, TaskPoints, Task, PutTaskDTO},
+    models::{CreateTaskDTO, DeleteTaskDTO, PutTaskDTO, Task, TaskPoints},
 };
 
 pub async fn _create_task(
     db: &Database,
     create_task_dto: CreateTaskDTO,
 ) -> Result<(), sqlx::Error> {
-    sqlx::query("INSERT INTO tasks (description, points, link, task_button_text) VALUES ($1, $2, $3, $4)")
-        .bind(create_task_dto.description)
-        .bind(create_task_dto.points)
-        .bind(create_task_dto.link)
-        .bind(create_task_dto.task_button_text)
-        .execute(db)
-        .await?;
+    sqlx::query(
+        "INSERT INTO tasks (description, points, link, task_button_text) VALUES ($1, $2, $3, $4)",
+    )
+    .bind(create_task_dto.description)
+    .bind(create_task_dto.points)
+    .bind(create_task_dto.link)
+    .bind(create_task_dto.task_button_text)
+    .execute(db)
+    .await?;
     Ok(())
 }
 
@@ -25,7 +27,7 @@ pub async fn _delete_task(
         .bind(delete_task_dto.task_id)
         .execute(db)
         .await?;
-    
+
     if result.rows_affected() == 0 {
         return Err(sqlx::Error::RowNotFound);
     }
@@ -34,10 +36,11 @@ pub async fn _delete_task(
 }
 
 pub async fn _get_tasks(db: &Database) -> Result<Vec<Task>, sqlx::Error> {
-    let tasks: Vec<Task> =
-        sqlx::query_as("SELECT id, description, points, time_created, link, task_button_text FROM tasks")
-            .fetch_all(db)
-            .await?;
+    let tasks: Vec<Task> = sqlx::query_as(
+        "SELECT id, description, points, time_created, link, task_button_text FROM tasks",
+    )
+    .fetch_all(db)
+    .await?;
     Ok(tasks)
 }
 
@@ -54,10 +57,12 @@ pub async fn _put_task(db: &Database, put_task_dto: PutTaskDTO) -> Result<(), sq
     let mut points = put_task_dto.points;
     let mut link = put_task_dto.link;
 
-    let task = sqlx::query_as::<_, Task>("SELECT id, description, time_created, points, link FROM tasks WHERE id = $1")
-        .bind(put_task_dto.task_id)
-        .fetch_one(db)
-        .await?;
+    let task = sqlx::query_as::<_, Task>(
+        "SELECT id, description, time_created, points, link FROM tasks WHERE id = $1",
+    )
+    .bind(put_task_dto.task_id)
+    .fetch_one(db)
+    .await?;
 
     if description.is_none() {
         description = Some(task.description);

@@ -1,7 +1,10 @@
 use password_encryptor::{EncryptionData, PasswordEncryptor};
 
-
-pub fn encrypt_password(password_encryptor:&PasswordEncryptor,password: &str, salt: &str) -> String {
+pub fn encrypt_password(
+    password_encryptor: &PasswordEncryptor,
+    password: &str,
+    salt: &str,
+) -> String {
     let data = EncryptionData {
         content: password,
         salt,
@@ -16,7 +19,12 @@ pub fn encrypt_password(password_encryptor:&PasswordEncryptor,password: &str, sa
     }
 }
 
-pub fn validate_password(password_encryptor:&PasswordEncryptor,password: &str, encrypted_password: &str, salt: &str) -> bool {
+pub fn validate_password(
+    password_encryptor: &PasswordEncryptor,
+    password: &str,
+    encrypted_password: &str,
+    salt: &str,
+) -> bool {
     let data = EncryptionData {
         content: password,
         salt,

@@ -14,7 +14,6 @@ pub struct User {
     pub referrer_id: Option<i32>,
 }
 
-
 #[derive(Debug, FromRow, Serialize)]
 pub struct UserWithEncryptedPassword {
     pub id: i32,
@@ -26,7 +25,7 @@ pub struct UserWithEncryptedPassword {
     pub referral_points: i32, // received from others farming points
     pub referred_by: Vec<i32>,
     pub referrer_id: Option<i32>,
-    pub encrypted_password:String
+    pub encrypted_password: String,
 }
 
 impl From<UserWithEncryptedPassword> for User {

@@ -1,17 +1,17 @@
 mod constants;
 mod db;
+mod jwt;
 mod middlewares;
 mod models;
+mod password;
 mod routes;
 mod state;
-mod jwt;
-mod password;
 
 use axum::{http::Method, Extension, Router};
 use password_encryptor::PasswordEncryptor;
-use tower_http::cors::CorsLayer;
 use std::{env, sync::Arc};
 use tokio::net::TcpListener;
+use tower_http::cors::CorsLayer;
 
 use crate::{db::connect, state::AppState};
 
@@ -32,26 +32,27 @@ async fn main() {
         .unwrap_or_else(|_| panic!("Missing required environment variable: SECURITY_HASH"));
 
     let salt = env::var("SALT")
-    .unwrap_or_else(|_| panic!("Missing required environment variable: SECURITY_HASH"));
-
+        .unwrap_or_else(|_| panic!("Missing required environment variable: SECURITY_HASH"));
 
     let cors = CorsLayer::new()
-    .allow_methods([Method::GET,Method::POST,Method::PUT,Method::DELETE])
-    .allow_origin(["http://localhost:3000".parse().unwrap()])
-    .allow_headers([
-        "Content-Type".parse().unwrap(),
-        "Authoriaztion".parse().unwrap(),
-        "Access-Control-Allow-Origin".parse().unwrap(),
-        "X-Security-Hash".parse().unwrap()
-    ])
-    .allow_credentials(true);
-    
+        .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE])
+        .allow_origin(["http://localhost:3000".parse().unwrap()])
+        .allow_headers([
+            "Content-Type".parse().unwrap(),
+            "Authorization".parse().unwrap(),
+            "Access-Control-Allow-Origin".parse().unwrap(),
+            "X-Security-Hash".parse().unwrap(),
+        ])
+        .allow_credentials(true);
+
     let encoding_key = jwt::init_encoding_key(&encryption_key).unwrap();
+
+    let decoding_key = jwt::init_decoding_key(&encryption_key).unwrap();
 
     let db = connect(database_url.as_str()).await.unwrap();
 
     sqlx::migrate!("./migrations").run(&db).await.unwrap();
-   
+
     let password_encryptor = PasswordEncryptor::new(encryption_key.as_bytes().to_vec(), None);
 
     let state = AppState {
@@ -60,7 +61,8 @@ async fn main() {
         security_hash,
         password_encryptor,
         salt,
-        encoding_key
+        encoding_key,
+        decoding_key,
     };
 
     let shared_state = Arc::new(state);

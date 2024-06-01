@@ -1,6 +1,7 @@
 use crate::{
     db::Database,
-    models::{BindWalletAddressDTO, CreateUserDTO, FinishTaskDTO, User, UserWithEncryptedPassword}, password::encrypt_password,
+    models::{BindWalletAddressDTO, CreateUserDTO, FinishTaskDTO, User, UserWithEncryptedPassword},
+    password::encrypt_password,
 };
 
 use chrono::prelude::*;
@@ -12,11 +13,12 @@ pub async fn _create_user(
     db: &Database,
     create_user_dto: CreateUserDTO,
     password_encryptor: PasswordEncryptor,
-    salt: &str
+    salt: &str,
 ) -> Result<User, sqlx::Error> {
     let tx = db.begin().await?;
 
-    let encrypted_password = encrypt_password(&password_encryptor, create_user_dto.password.as_str(), salt);
+    let encrypted_password =
+        encrypt_password(&password_encryptor, create_user_dto.password.as_str(), salt);
     let referral_code = Utc::now().timestamp();
     let create_user_result = sqlx::query_as::<_, (i32,)>(
         "INSERT INTO users (twitter_id, referral_code, wallet_address, encrypted_password) values ($1, $2, $3, $4) RETURNING id",
@@ -29,9 +31,7 @@ pub async fn _create_user(
     .await?;
 
     if let Some(ref_code) = create_user_dto.reffer_code {
-        let result_refered = _get_user_by_referral_code(db, ref_code)
-            .await
-            .unwrap();
+        let result_refered = _get_user_by_referral_code(db, ref_code).await.unwrap();
         match result_refered {
             Some(user) => {
                 let mut referred_by = user.referred_by.clone();
@@ -103,10 +103,9 @@ pub async fn _finish_task(
     finish_task_dto: FinishTaskDTO,
 ) -> Result<(), sqlx::Error> {
     // This can be optimized. We dont need to query all!
-    let mut user: User = sqlx::query_as("SELECT id, wallet_address, twitter_id, referral_code, total_points, finished_tasks, referral_points, referred_by, referrer_id FROM users WHERE id = $1")
-        .bind(finish_task_dto.user_id)
-        .fetch_one(db)
-        .await?;
+    let mut user = _get_user_by_twitter_id(db, finish_task_dto.user_id.as_str())
+        .await?
+        .ok_or_else(|| sqlx::Error::RowNotFound)?;
 
     // Check if the task is already finished
     if !user.finished_tasks.contains(&finish_task_dto.task_id) {
@@ -122,30 +121,32 @@ pub async fn _finish_task(
         user.total_points += points_to_add;
 
         // Update the user in the database
-        sqlx::query("UPDATE users SET finished_tasks = $1, total_points = $2 WHERE id = $3")
-            .bind(&user.finished_tasks)
-            .bind(user.total_points)
-            .bind(finish_task_dto.user_id)
-            .execute(db)
-            .await?;
-
-        let mut user_referral: User = sqlx::query_as("SELECT id, wallet_address, twitter_id, referral_code, total_points, finished_tasks, referral_points, referred_by, referrer_id FROM users WHERE id = $1")
-        .bind(user.referrer_id)
-        .fetch_one(db)
+        sqlx::query(
+            "UPDATE users SET finished_tasks = $1, total_points = $2 WHERE twitter_id = $3",
+        )
+        .bind(&user.finished_tasks)
+        .bind(user.total_points)
+        .bind(finish_task_dto.user_id)
+        .execute(db)
         .await?;
 
-        user_referral.total_points += points_for_referral;
-        user_referral.referral_points += points_for_referral;
-
-        sqlx::query("UPDATE users SET total_points = $1, referral_points = $2 WHERE id = $3")
-            .bind(user_referral.total_points)
-            .bind(user_referral.referral_points)
-            .bind(user_referral.id)
-            .execute(db)
+        if user.referrer_id.is_some() {
+            let mut user_referral: User = sqlx::query_as("SELECT id, wallet_address, twitter_id, referral_code, total_points, finished_tasks, referral_points, referred_by, referrer_id FROM users WHERE id = $1")
+            .bind(user.referrer_id)
+            .fetch_one(db)
             .await?;
-    }
-    // TODO: Should return error to client if task does not exist or already finished.
 
+            user_referral.total_points += points_for_referral;
+            user_referral.referral_points += points_for_referral;
+
+            sqlx::query("UPDATE users SET total_points = $1, referral_points = $2 WHERE id = $3")
+                .bind(user_referral.total_points)
+                .bind(user_referral.referral_points)
+                .bind(user_referral.id)
+                .execute(db)
+                .await?;
+        }
+    }
     Ok(())
 }
 
@@ -170,7 +171,10 @@ pub async fn _get_user_by_id(db: &Database, id: i32) -> Result<Option<User>, sql
     Ok(user)
 }
 
-pub async fn _delete_user_by_twitter_id(db: &Database, twitter_id: &str) -> Result<u64, sqlx::Error> {
+pub async fn _delete_user_by_twitter_id(
+    db: &Database,
+    twitter_id: &str,
+) -> Result<u64, sqlx::Error> {
     let rows_affected = sqlx::query("DELETE FROM users WHERE twitter_id = $1")
         .bind(twitter_id)
         .execute(db)
@@ -179,16 +183,18 @@ pub async fn _delete_user_by_twitter_id(db: &Database, twitter_id: &str) -> Resu
     Ok(rows_affected)
 }
 
-pub async fn _get_user_by_twitter_id(db: &Database, twitter_id: &str) -> Result<Option<UserWithEncryptedPassword>, sqlx::Error> {
-    let user = sqlx::query_as::<_, UserWithEncryptedPassword>("SELECT * FROM users WHERE twitter_id = $1")
-        .bind(twitter_id)
-        .fetch_optional(db)
-        .await?;
-    
+pub async fn _get_user_by_twitter_id(
+    db: &Database,
+    twitter_id: &str,
+) -> Result<Option<UserWithEncryptedPassword>, sqlx::Error> {
+    let user =
+        sqlx::query_as::<_, UserWithEncryptedPassword>("SELECT * FROM users WHERE twitter_id = $1")
+            .bind(twitter_id)
+            .fetch_optional(db)
+            .await?;
+
     Ok(user)
 }
-
-
 
 #[cfg(test)]
 mod tests {
@@ -215,18 +221,21 @@ mod tests {
             CreateUserDTO {
                 twitter_id: "123".to_string() + chrono::Local::now().to_string().as_str(),
                 reffer_code: None,
-                solana_adr:"123".to_string() + chrono::Local::now().to_string().as_str(),
-                password:"123".to_string()
+                solana_adr: "123".to_string() + chrono::Local::now().to_string().as_str(),
+                password: "123".to_string(),
             },
-            PasswordEncryptor::new(vec![1,2,3],None),
-            "salt"
+            PasswordEncryptor::new(vec![1, 2, 3], None),
+            "salt",
         )
         .await
         .unwrap();
 
         let user_id = create_user_return_type.id;
 
-        let user = _get_user_by_id(&pool, create_user_return_type.id).await.unwrap().unwrap();
+        let user = _get_user_by_id(&pool, create_user_return_type.id)
+            .await
+            .unwrap()
+            .unwrap();
 
         let user = _get_user_by_referral_code(&pool, user.referral_code)
             .await
@@ -253,7 +262,7 @@ mod tests {
         let rows_affected = _delete_user_by_twitter_id(&pool, user_id)
             .await
             .expect("Failed to delete user");
-        
+
         assert_eq!(rows_affected, 1);
     }
 }

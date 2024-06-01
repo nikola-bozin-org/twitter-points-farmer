@@ -23,9 +23,13 @@ pub async fn require_auth(
 ) -> Response {
     let dev_secret = authorization_token.token();
     if dev_secret != state.dev_secret {
-        return (StatusCode::UNAUTHORIZED, Json(json!({
-            "error":"Unauthorized"
-        }))).into_response();
+        return (
+            StatusCode::UNAUTHORIZED,
+            Json(json!({
+                "error":"Unauthorized"
+            })),
+        )
+            .into_response();
     }
     next.run(req).await
 }

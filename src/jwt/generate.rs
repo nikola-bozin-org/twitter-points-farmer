@@ -6,6 +6,8 @@ use std::time::Duration;
 
 pub use jsonwebtoken::EncodingKey;
 
+use crate::models::Task;
+
 pub fn generate_jwt(claims: Claims, encoding_key: &EncodingKey) -> Result<String, Error> {
     encode(&Header::default(), &claims, encoding_key)
 }
@@ -24,14 +26,24 @@ pub struct Claims {
     pub id: i32,
     pub exp: i64,
     pub username: String,
-    pub wallet:String,
-    pub total_points:i32,
-    pub referrals_points:i32,
-    pub referrals_count:u32,
-    pub referral_code:i32
+    pub wallet: String,
+    pub total_points: i32,
+    pub referrals_points: i32,
+    pub referrals_count: u32,
+    pub referral_code: i32,
+    pub finished_tasks: Vec<i32>,
 }
 impl Claims {
-    pub fn new(id: i32, username: String, wallet:String,total_points:i32,referrals_count:u32,referrals_points:i32,referral_code:i32) -> Self {
+    pub fn new(
+        id: i32,
+        username: String,
+        wallet: String,
+        total_points: i32,
+        referrals_count: u32,
+        referrals_points: i32,
+        referral_code: i32,
+        finished_tasks: Vec<i32>,
+    ) -> Self {
         Self {
             id,
             username,
@@ -40,7 +52,8 @@ impl Claims {
             total_points,
             referrals_count,
             referrals_points,
-            referral_code
+            referral_code,
+            finished_tasks,
         }
     }
 }
@@ -69,12 +82,13 @@ mod tests {
         let claim = Claims {
             id,
             username,
-            wallet:"123".to_string(),
+            wallet: "123".to_string(),
             exp: generate_expiration_date(),
-            referral_code:123,
-            referrals_count:123,
-            referrals_points:123,
-            total_points:1111
+            referral_code: 123,
+            referrals_count: 123,
+            referrals_points: 123,
+            total_points: 1111,
+            finished_tasks: vec![],
         };
         let encoding_key = init_encoding_key("secret_key").unwrap();
         let encoded = generate_jwt(claim, &encoding_key).unwrap();

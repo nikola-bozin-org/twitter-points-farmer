@@ -3,8 +3,8 @@ use serde::Deserialize;
 #[derive(Debug, Deserialize)]
 pub struct CreateUserDTO {
     pub twitter_id: String,
-    pub solana_adr:String,
-    pub password:String,
+    pub solana_adr: String,
+    pub password: String,
     pub reffer_code: Option<i32>,
 }
 
@@ -15,8 +15,8 @@ pub struct BindWalletAddressDTO {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct LoginUserDTO{
+pub struct LoginUserDTO {
     pub twitter_id: String,
-    pub solana_adr:String,
-    pub password:String,
+    pub solana_adr: String,
+    pub password: String,
 }
