@@ -252,14 +252,12 @@ async fn finish_task(
                 }
             }
         }
-        Err(_) => {
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({
-                    "error": "Internal Server Error"
-                })),
-            )
-                .into_response()
-        }
+        Err(_) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({
+                "error": "Internal Server Error"
+            })),
+        )
+            .into_response(),
     }
 }
