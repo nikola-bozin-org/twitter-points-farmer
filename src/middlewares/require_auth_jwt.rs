@@ -28,7 +28,7 @@ pub async fn require_auth_jwt(
         Ok(claims) => {
             req.extensions_mut().insert::<Claims>(claims);
         }
-        Err(e) => {
+        Err(_e) => {
             return (StatusCode::BAD_REQUEST, "X").into_response();
         }
     }

@@ -44,8 +44,26 @@ async fn validate_jwt_route(
 ) -> impl IntoResponse {
     let token = authorization_token.token();
     match validate_jwt::<Claims>(token, &state.decoding_key) {
-        Ok(claims) => (StatusCode::OK, Json(json!({"claims":claims}))).into_response(),
-        Err(_e) => (StatusCode::BAD_REQUEST, "X").into_response(),
+        Ok(claims) => {
+            let user = _get_user_by_twitter_id(&state.db, &claims.username)
+                .await
+                .unwrap()
+                .unwrap();
+
+            let claims = Claims::new(
+                user.id,
+                user.twitter_id.clone(),
+                user.wallet_address.clone(),
+                user.total_points,
+                user.referred_by.len() as u32,
+                user.referral_points,
+                user.referral_code,
+                user.finished_tasks,
+            );
+
+            (StatusCode::OK, Json(json!({"claims":claims}))).into_response()
+        }
+        Err(_e) => (StatusCode::BAD_REQUEST, "Inaccessible").into_response(),
     }
 }
 

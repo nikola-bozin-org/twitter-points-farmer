@@ -6,8 +6,6 @@ use std::time::Duration;
 
 pub use jsonwebtoken::EncodingKey;
 
-use crate::models::Task;
-
 pub fn generate_jwt(claims: Claims, encoding_key: &EncodingKey) -> Result<String, Error> {
     encode(&Header::default(), &claims, encoding_key)
 }
@@ -34,6 +32,7 @@ pub struct Claims {
     pub finished_tasks: Vec<i32>,
 }
 impl Claims {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         id: i32,
         username: String,

@@ -31,7 +31,7 @@ pub async fn _create_user(
     .await?;
 
     if let Some(ref_code) = create_user_dto.reffer_code {
-        let result_refered = _get_user_by_referral_code(db, ref_code).await.unwrap();
+        let result_refered = _get_user_by_referral_code(db, ref_code).await?;
         match result_refered {
             Some(user) => {
                 let mut referred_by = user.referred_by.clone();
