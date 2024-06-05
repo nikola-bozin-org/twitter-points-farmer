@@ -15,7 +15,7 @@ pub fn init_encoding_key(secret_key: &str) -> Result<EncodingKey, Error> {
 }
 
 fn generate_expiration_date() -> i64 {
-    let expiration_date = Utc::now() + Duration::from_secs(600);
+    let expiration_date = Utc::now() + Duration::from_secs(172800); //2days
     expiration_date.timestamp()
 }
 
