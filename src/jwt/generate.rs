@@ -64,7 +64,6 @@ where
 {
     type Rejection = String;
     async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
-        dbg!(&parts.uri);
         let claims = parts.extensions.get::<Self>();
         Ok(claims.unwrap().clone())
     }

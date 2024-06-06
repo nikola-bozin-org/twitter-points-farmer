@@ -18,7 +18,6 @@ pub async fn rate_limit(
     req: Request,
     next: Next,
 ) -> Response {
-    println!("Rate limiter hit with ip: {}", ip_addr);
     let ip_data = state.redis_rate_limiter_db.get_data(ip_addr).await;
 
     let requests_amount = state.rate_limiter_config.requests_amount;

@@ -1,11 +1,7 @@
 use std::sync::Arc;
 
 use axum::{
-    http::StatusCode,
-    middleware,
-    response::IntoResponse,
-    routing::{get, post},
-    Extension, Json, Router,
+   extract::Request, http::StatusCode, middleware, response::IntoResponse, routing::{get, post}, Extension, Json, Router
 };
 use axum_extra::{
     headers::{authorization::Bearer, Authorization},
@@ -102,7 +98,6 @@ async fn create_user(
                     })),
                 ),
                 Err(err) => {
-                    println!("Failed to generate JWT: {}", err);
                     (
                         StatusCode::BAD_REQUEST,
                         Json(json!({
@@ -172,7 +167,6 @@ async fn login_user(
                                     .into_response()
                             }
                             Err(err) => {
-                                println!("Failed to generate JWT: {}", err);
                                 (
                                     StatusCode::BAD_REQUEST,
                                     Json(json!({
@@ -207,10 +201,20 @@ async fn get_users(Extension(state): Extension<Arc<AppState>>) -> impl IntoRespo
 }
 
 async fn finish_task(
+    claims:Claims,
     Extension(state): Extension<Arc<AppState>>,
     Json(finish_task_dto): Json<FinishTaskDTO>,
 ) -> impl IntoResponse {
     let user_id = finish_task_dto.user_id.clone();
+    if user_id != claims.username {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(json!({
+                "error": "Bad Request."
+            })),
+        )
+            .into_response();
+    }
     match _finish_task(&state.db, finish_task_dto).await {
         Ok(_) => {
             let user = match _get_user_by_twitter_id(&state.db, user_id.as_str()).await {
@@ -259,7 +263,6 @@ async fn finish_task(
                         .into_response()
                 }
                 Err(err) => {
-                    println!("Failed to generate JWT: {}", err);
                     (
                         StatusCode::BAD_REQUEST,
                         Json(json!({
