@@ -42,6 +42,7 @@ async fn main() {
         .unwrap_or_else(|_| panic!("Missing required environment variable: {}", "DATABSE_URL"));
 
     let cors = CorsLayer::new()
+        .allow_origin(["https://farm.frogofroggins.wtf".parse().unwrap()])
         .allow_origin(Any)
         .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE])
         .allow_headers([
@@ -50,7 +51,7 @@ async fn main() {
             "Access-Control-Allow-Origin".parse().unwrap(),
             "X-Security-Hash".parse().unwrap(),
         ]);
-        
+
     let encoding_key = jwt::init_encoding_key(&encryption_key).unwrap();
 
     let decoding_key = jwt::init_decoding_key(&encryption_key).unwrap();
