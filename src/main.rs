@@ -49,9 +49,8 @@ async fn main() {
             "Authorization".parse().unwrap(),
             "Access-Control-Allow-Origin".parse().unwrap(),
             "X-Security-Hash".parse().unwrap(),
-        ])
-        .allow_credentials(true);
-
+        ]);
+        
     let encoding_key = jwt::init_encoding_key(&encryption_key).unwrap();
 
     let decoding_key = jwt::init_decoding_key(&encryption_key).unwrap();
