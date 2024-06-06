@@ -14,7 +14,7 @@ use middlewares::{RateLimiterConfig, RedisRateLimiterDb};
 use password_encryptor::PasswordEncryptor;
 use std::{env, sync::Arc,net::SocketAddr};
 use tokio::net::TcpListener;
-use tower_http::cors::CorsLayer;
+use tower_http::cors::{Any, CorsLayer};
 
 use crate::{db::connect, state::AppState};
 use crate::middlewares::*;
@@ -42,6 +42,7 @@ async fn main() {
         .unwrap_or_else(|_| panic!("Missing required environment variable: {}", "DATABSE_URL"));
 
     let cors = CorsLayer::new()
+        .allow_origin(Any)
         .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE])
         .allow_headers([
             "Content-Type".parse().unwrap(),
