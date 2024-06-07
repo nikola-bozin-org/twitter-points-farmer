@@ -24,8 +24,8 @@ fn _routes() -> Router {
     Router::new()
         .route("/", delete(delete_task))
         .route("/", put(put_task))
-        .layer(middleware::from_fn(require_auth))
         .route("/", post(create_task))
+        .layer(middleware::from_fn(require_auth))
         .route("/", get(get_tasks))
         .layer(middleware::from_fn(require_security_hash))
 }
