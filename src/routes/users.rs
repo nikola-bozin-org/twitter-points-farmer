@@ -13,7 +13,7 @@ use crate::{
     db::{_bind_wallet_address, _create_user, _finish_task, _get_user_by_twitter_id, _get_users},
     jwt::{generate_jwt, validate_jwt, Claims},
     middlewares::{require_auth_jwt, require_security_hash},
-    models::{BindWalletAddressDTO, CreateUserDTO, FinishTaskDTO, LoginUserDTO, User},
+    models::{BindWalletAddressDTO, CreateUserDTO, FinishTaskDTO, LoginUserDTO, User, ValidateJwtDTO},
     password::validate_password,
     state::AppState,
 };
@@ -29,7 +29,7 @@ fn _routes() -> Router {
         .layer(middleware::from_fn(require_auth_jwt))
         .route("/login", post(login_user))
         .route("/", post(create_user))
-        .route("/validate", get(validate_jwt_route))
+        .route("/validate", post(validate_jwt_route))
         .route("/", get(get_users))
         .layer(middleware::from_fn(require_security_hash))
 }
@@ -37,6 +37,7 @@ fn _routes() -> Router {
 async fn validate_jwt_route(
     authorization_token: TypedHeader<Authorization<Bearer>>,
     Extension(state): Extension<Arc<AppState>>,
+    Json(validate_jwt_dto): Json<ValidateJwtDTO>,
 ) -> impl IntoResponse {
     let token = authorization_token.token();
     match validate_jwt::<Claims>(token, &state.decoding_key) {
@@ -45,6 +46,12 @@ async fn validate_jwt_route(
                 .await
                 .unwrap()
                 .unwrap();
+
+            
+
+            if validate_jwt_dto.solana_adr!=user.wallet_address || validate_jwt_dto.username !=user.twitter_id {
+               return (StatusCode::BAD_REQUEST, Json(json!({"error":"Inaccessible"}))).into_response()
+            }
 
             let claims = Claims::new(
                 user.id,
@@ -120,6 +127,7 @@ async fn login_user(
     Extension(state): Extension<Arc<AppState>>,
     Json(login_user_dto): Json<LoginUserDTO>,
 ) -> impl IntoResponse {
+    dbg!(&login_user_dto);
     let user = _get_user_by_twitter_id(&state.db, login_user_dto.twitter_id.as_str()).await;
     match user {
         Ok(user) => match user {

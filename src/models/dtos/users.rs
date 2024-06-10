@@ -20,3 +20,9 @@ pub struct LoginUserDTO {
     pub solana_adr: String,
     pub password: String,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct ValidateJwtDTO{
+    pub username:String,
+    pub solana_adr:String,
+}
