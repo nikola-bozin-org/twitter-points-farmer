@@ -34,7 +34,7 @@ pub async fn _create_user(
     salt: &str,
 ) -> Result<User, sqlx::Error> {
     let tx = db.begin().await?;
-    let last_created_id = get_last_created_user_id(db).await.unwrap();
+    let last_created_id = get_last_created_user_id(db).await.unwrap_or_default();
     let encrypted_password =
         encrypt_password(&password_encryptor, create_user_dto.password.as_str(), salt);
     let referral_code: [u8; 32] = sha3_256(last_created_id.to_string().as_bytes());
