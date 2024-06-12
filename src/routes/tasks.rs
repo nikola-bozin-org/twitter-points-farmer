@@ -45,7 +45,7 @@ async fn create_task(
         return (StatusCode::BAD_REQUEST, err.to_string()).into_response();
     }
 
-    (StatusCode::OK, "Task created!").into_response()
+    (StatusCode::OK, Json(json!({"id":create_result.unwrap()}))).into_response()
 }
 
 async fn delete_task(

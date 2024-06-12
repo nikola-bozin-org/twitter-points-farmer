@@ -6,18 +6,20 @@ use crate::{
 pub async fn _create_task(
     db: &Database,
     create_task_dto: CreateTaskDTO,
-) -> Result<(), sqlx::Error> {
-    sqlx::query(
-        "INSERT INTO tasks (description, points, link, task_button_text) VALUES ($1, $2, $3, $4)",
+) -> Result<i32, sqlx::Error> {
+    let row: (i32,) = sqlx::query_as(
+        "INSERT INTO tasks (description, points, link, task_button_text) VALUES ($1, $2, $3, $4) RETURNING id",
     )
     .bind(create_task_dto.description)
     .bind(create_task_dto.points)
     .bind(create_task_dto.link)
     .bind(create_task_dto.task_button_text)
-    .execute(db)
+    .fetch_one(db)
     .await?;
-    Ok(())
+    
+    Ok(row.0)
 }
+
 
 pub async fn _delete_task(
     db: &Database,
