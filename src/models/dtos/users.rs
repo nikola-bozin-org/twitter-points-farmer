@@ -22,7 +22,7 @@ pub struct LoginUserDTO {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct ValidateJwtDTO{
-    pub username:String,
-    pub solana_adr:String,
+pub struct ValidateJwtDTO {
+    pub username: String,
+    pub solana_adr: String,
 }

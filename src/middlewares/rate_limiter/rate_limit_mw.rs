@@ -49,7 +49,11 @@ pub async fn rate_limit(
                     )
                     .await;
             }
-            return (StatusCode::TOO_MANY_REQUESTS, Json(json!({"error":"Too many requests!"}))).into_response();
+            return (
+                StatusCode::TOO_MANY_REQUESTS,
+                Json(json!({"error":"Too many requests!"})),
+            )
+                .into_response();
         }
         state
             .redis_rate_limiter_db

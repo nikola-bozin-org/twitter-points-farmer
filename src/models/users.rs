@@ -1,7 +1,7 @@
 use serde::Serialize;
 use sqlx::prelude::FromRow;
 
-#[derive(Debug, FromRow, Serialize,Clone)]
+#[derive(Debug, FromRow, Serialize, Clone)]
 pub struct User {
     pub id: i32,
     pub wallet_address: String,
@@ -14,7 +14,7 @@ pub struct User {
     pub referrer_id: Option<i32>,
 }
 
-#[derive(Debug, FromRow, Serialize,Clone)]
+#[derive(Debug, FromRow, Serialize, Clone)]
 pub struct UserWithEncryptedPassword {
     pub id: i32,
     pub wallet_address: String,

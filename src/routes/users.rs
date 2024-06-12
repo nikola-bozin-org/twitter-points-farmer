@@ -1,7 +1,11 @@
 use std::sync::Arc;
 
 use axum::{
-   http::StatusCode, middleware, response::IntoResponse, routing::{get, post}, Extension, Json, Router
+    http::StatusCode,
+    middleware,
+    response::IntoResponse,
+    routing::{get, post},
+    Extension, Json, Router,
 };
 use axum_extra::{
     headers::{authorization::Bearer, Authorization},
@@ -13,7 +17,9 @@ use crate::{
     db::{_bind_wallet_address, _create_user, _finish_task, _get_user_by_twitter_id, _get_users},
     jwt::{generate_jwt, validate_jwt, Claims},
     middlewares::{require_auth_jwt, require_security_hash},
-    models::{BindWalletAddressDTO, CreateUserDTO, FinishTaskDTO, LoginUserDTO, User, ValidateJwtDTO},
+    models::{
+        BindWalletAddressDTO, CreateUserDTO, FinishTaskDTO, LoginUserDTO, User, ValidateJwtDTO,
+    },
     password::validate_password,
     state::AppState,
 };
@@ -47,10 +53,14 @@ async fn validate_jwt_route(
                 .unwrap()
                 .unwrap();
 
-            
-
-            if validate_jwt_dto.solana_adr!=user.wallet_address || validate_jwt_dto.username !=user.twitter_id {
-               return (StatusCode::BAD_REQUEST, Json(json!({"error":"Inaccessible"}))).into_response()
+            if validate_jwt_dto.solana_adr != user.wallet_address
+                || validate_jwt_dto.username != user.twitter_id
+            {
+                return (
+                    StatusCode::BAD_REQUEST,
+                    Json(json!({"error":"Inaccessible"})),
+                )
+                    .into_response();
             }
 
             let claims = Claims::new(
@@ -118,7 +128,7 @@ async fn create_user(
         }
         Err(err) => {
             dbg!(&err);
-            
+
             (
                 StatusCode::BAD_REQUEST,
                 Json(json!({
@@ -180,15 +190,13 @@ async fn login_user(
                                 )
                                     .into_response()
                             }
-                            Err(err) => {
-                                (
-                                    StatusCode::BAD_REQUEST,
-                                    Json(json!({
-                                        "error": "Bad Request"
-                                    })),
-                                )
-                                    .into_response()
-                            }
+                            Err(_err) => (
+                                StatusCode::BAD_REQUEST,
+                                Json(json!({
+                                    "error": "Bad Request"
+                                })),
+                            )
+                                .into_response(),
                         }
                     }
                 }
@@ -215,7 +223,7 @@ async fn get_users(Extension(state): Extension<Arc<AppState>>) -> impl IntoRespo
 }
 
 async fn finish_task(
-    claims:Claims,
+    claims: Claims,
     Extension(state): Extension<Arc<AppState>>,
     Json(finish_task_dto): Json<FinishTaskDTO>,
 ) -> impl IntoResponse {
@@ -277,15 +285,13 @@ async fn finish_task(
                     )
                         .into_response()
                 }
-                Err(err) => {
-                    (
-                        StatusCode::BAD_REQUEST,
-                        Json(json!({
-                            "error": "Bad Request"
-                        })),
-                    )
-                        .into_response()
-                }
+                Err(_err) => (
+                    StatusCode::BAD_REQUEST,
+                    Json(json!({
+                        "error": "Bad Request"
+                    })),
+                )
+                    .into_response(),
             }
         }
         Err(_) => (

@@ -1,7 +1,7 @@
+mod rate_limiter;
 mod require_auth;
 mod require_auth_jwt;
 mod require_security_hash;
-mod rate_limiter;
 
 pub use rate_limiter::*;
 pub use require_auth::*;

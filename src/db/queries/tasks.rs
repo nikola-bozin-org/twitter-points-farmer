@@ -36,11 +36,10 @@ pub async fn _delete_task(
 }
 
 pub async fn _get_tasks(db: &Database) -> Result<Vec<Task>, sqlx::Error> {
-    let tasks: Vec<Task> = sqlx::query_as(
-        "SELECT id, description, points, link, task_button_text FROM tasks",
-    )
-    .fetch_all(db)
-    .await?;
+    let tasks: Vec<Task> =
+        sqlx::query_as("SELECT id, description, points, link, task_button_text FROM tasks")
+            .fetch_all(db)
+            .await?;
     Ok(tasks)
 }
 
@@ -77,7 +76,7 @@ pub async fn _put_task(db: &Database, put_task_dto: PutTaskDTO) -> Result<(), sq
         link = Some(task.link.unwrap_or_default());
     }
 
-    if task_button_text.is_none(){
+    if task_button_text.is_none() {
         task_button_text = Some(task.task_button_text.unwrap_or_default());
     }
 

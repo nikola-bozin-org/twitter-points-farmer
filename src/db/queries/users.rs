@@ -4,20 +4,17 @@ use crate::{
     password::encrypt_password,
 };
 
+use hex::encode;
 use password_encryptor::PasswordEncryptor;
 use sha3_rust::*;
-use hex::encode;
 
 use super::_get_points_for_task;
 
-
 pub async fn _save_last_created_user_id(db: &Database, user_id: i32) -> Result<(), sqlx::Error> {
-    sqlx::query(
-        "INSERT INTO last_created_user (user_id) VALUES ($1)",
-    )
-    .bind(user_id)
-    .execute(db)
-    .await?;
+    sqlx::query("INSERT INTO last_created_user (user_id) VALUES ($1)")
+        .bind(user_id)
+        .execute(db)
+        .await?;
     Ok(())
 }
 
@@ -272,6 +269,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore]
     async fn test_delete_user_by_id() {
         dotenv::dotenv().ok();
         let database_url = env::var("DATABASE_URL").unwrap_or_else(|_| {

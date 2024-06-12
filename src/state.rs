@@ -1,7 +1,10 @@
 use jsonwebtoken::{DecodingKey, EncodingKey};
 use password_encryptor::PasswordEncryptor;
 
-use crate::{db::Database, middlewares::{RateLimiterConfig, RedisRateLimiterDb}};
+use crate::{
+    db::Database,
+    middlewares::{RateLimiterConfig, RedisRateLimiterDb},
+};
 
 #[derive(Clone)]
 pub struct AppState {

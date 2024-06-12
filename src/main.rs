@@ -12,12 +12,12 @@ use axum::{http::Method, Extension, Router};
 use constants::{REQUESTS_AMOUNT_LIMIT, REQUESTS_AMOUNT_TIME_FRAME};
 use middlewares::{RateLimiterConfig, RedisRateLimiterDb};
 use password_encryptor::PasswordEncryptor;
-use std::{env, sync::Arc,net::SocketAddr};
+use std::{env, net::SocketAddr, sync::Arc};
 use tokio::net::TcpListener;
 use tower_http::cors::{Any, CorsLayer};
 
-use crate::{db::connect, state::AppState};
 use crate::middlewares::*;
+use crate::{db::connect, state::AppState};
 
 #[tokio::main]
 async fn main() {
@@ -95,5 +95,10 @@ async fn main() {
         .layer(middleware::from_fn(middlewares::rate_limit))
         .layer(Extension(shared_state));
 
-    axum::serve(listener, router.into_make_service_with_connect_info::<SocketAddr>()).await.unwrap()
+    axum::serve(
+        listener,
+        router.into_make_service_with_connect_info::<SocketAddr>(),
+    )
+    .await
+    .unwrap()
 }

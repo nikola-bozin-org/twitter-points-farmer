@@ -1,5 +1,6 @@
 use std::time::Duration;
 
+#[allow(dead_code)]
 pub trait RateLimiter {
     fn new(requests_amount: u8, limit: Duration) -> Self;
     fn set_requests_amount(&mut self, requests_amount: u8);
