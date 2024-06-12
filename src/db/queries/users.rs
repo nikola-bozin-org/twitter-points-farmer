@@ -4,10 +4,31 @@ use crate::{
     password::encrypt_password,
 };
 
-use chrono::prelude::*;
 use password_encryptor::PasswordEncryptor;
+use sha3_rust::*;
+use hex::encode;
 
 use super::_get_points_for_task;
+
+
+pub async fn _save_last_created_user_id(db: &Database, user_id: i32) -> Result<(), sqlx::Error> {
+    sqlx::query(
+        "INSERT INTO last_created_user (user_id) VALUES ($1)",
+    )
+    .bind(user_id)
+    .execute(db)
+    .await?;
+    Ok(())
+}
+
+pub async fn get_last_created_user_id(db: &Database) -> Result<i32, sqlx::Error> {
+    let result = sqlx::query_as::<_, (i32,)>(
+        "SELECT user_id FROM last_created_user ORDER BY id DESC LIMIT 1",
+    )
+    .fetch_one(db)
+    .await?;
+    Ok(result.0)
+}
 
 pub async fn _create_user(
     db: &Database,
@@ -16,22 +37,28 @@ pub async fn _create_user(
     salt: &str,
 ) -> Result<User, sqlx::Error> {
     let tx = db.begin().await?;
-
+    let last_created_id = get_last_created_user_id(db).await.unwrap();
     let encrypted_password =
         encrypt_password(&password_encryptor, create_user_dto.password.as_str(), salt);
-    let referral_code = Utc::now().timestamp();
+    let referral_code: [u8; 32] = sha3_256(last_created_id.to_string().as_bytes());
+    let referral_code_string = encode(referral_code);
+
     let create_user_result = sqlx::query_as::<_, (i32,)>(
         "INSERT INTO users (twitter_id, referral_code, wallet_address, encrypted_password) values ($1, $2, $3, $4) RETURNING id",
     )
     .bind(create_user_dto.twitter_id)
-    .bind(referral_code)
+    .bind(referral_code_string)
     .bind(create_user_dto.solana_adr)
     .bind(encrypted_password)
     .fetch_one(db)
     .await?;
 
+    let user_id = create_user_result.0;
+
+    _save_last_created_user_id(db, user_id).await?;
+
     if let Some(ref_code) = create_user_dto.reffer_code {
-        let result_refered = _get_user_by_referral_code(db, ref_code).await?;
+        let result_refered = _get_user_by_referral_code(db, ref_code.to_string()).await?;
         match result_refered {
             Some(user) => {
                 let mut referred_by = user.referred_by.clone();
@@ -152,7 +179,7 @@ pub async fn _finish_task(
 
 pub async fn _get_user_by_referral_code(
     db: &Database,
-    referral_code: i32,
+    referral_code: String,
 ) -> Result<Option<User>, sqlx::Error> {
     let user: Option<User> =
         sqlx::query_as("SELECT id, wallet_address, twitter_id, referral_code, total_points, finished_tasks, referral_points, referred_by, referrer_id FROM users WHERE referral_code = $1")
@@ -237,7 +264,7 @@ mod tests {
             .unwrap()
             .unwrap();
 
-        let user = _get_user_by_referral_code(&pool, user.referral_code)
+        let user = _get_user_by_referral_code(&pool, user.referral_code.to_string())
             .await
             .expect("Failed to get user");
 

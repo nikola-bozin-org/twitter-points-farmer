@@ -5,7 +5,7 @@ pub struct CreateUserDTO {
     pub twitter_id: String,
     pub solana_adr: String,
     pub password: String,
-    pub reffer_code: Option<i32>,
+    pub reffer_code: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]

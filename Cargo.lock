@@ -1731,6 +1731,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "sha3-rust"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a51fb7a83b457c17878a406dfb996387d8771d37d32ab72213960857800e7bde"
+
+[[package]]
 name = "signal-hook-registry"
 version = "1.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2327,6 +2333,7 @@ dependencies = [
  "axum-extra",
  "chrono",
  "dotenv",
+ "hex",
  "jsonwebtoken",
  "password-encryptor",
  "redis",
@@ -2334,6 +2341,7 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
+ "sha3-rust",
  "sqlx",
  "tokio",
  "tower-http",

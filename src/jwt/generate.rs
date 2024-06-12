@@ -28,7 +28,7 @@ pub struct Claims {
     pub total_points: i32,
     pub referrals_points: i32,
     pub referrals_count: u32,
-    pub referral_code: i32,
+    pub referral_code: String,
     pub finished_tasks: Vec<i32>,
 }
 impl Claims {
@@ -40,7 +40,7 @@ impl Claims {
         total_points: i32,
         referrals_count: u32,
         referrals_points: i32,
-        referral_code: i32,
+        referral_code: String,
         finished_tasks: Vec<i32>,
     ) -> Self {
         Self {
@@ -82,7 +82,7 @@ mod tests {
             username,
             wallet: "123".to_string(),
             exp: generate_expiration_date(),
-            referral_code: 123,
+            referral_code: "123".to_string(),
             referrals_count: 123,
             referrals_points: 123,
             total_points: 1111,

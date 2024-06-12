@@ -18,6 +18,8 @@ password-encryptor = "2.0.0"
 tower-http = { version = "0.5.2", features = ["cors"] }
 redis = { version = "0.25.3", features = ["tokio-comp"] }
 redis-macros = "0.3.0"
+sha3-rust = "0.1.1"
+hex = "0.4.3"
 
 [profile.release]
 strip = true      # Remove symbols from binary

@@ -37,7 +37,7 @@ pub async fn _delete_task(
 
 pub async fn _get_tasks(db: &Database) -> Result<Vec<Task>, sqlx::Error> {
     let tasks: Vec<Task> = sqlx::query_as(
-        "SELECT id, description, points, time_created, link, task_button_text FROM tasks",
+        "SELECT id, description, points, link, task_button_text FROM tasks",
     )
     .fetch_all(db)
     .await?;
@@ -56,9 +56,10 @@ pub async fn _put_task(db: &Database, put_task_dto: PutTaskDTO) -> Result<(), sq
     let mut description = put_task_dto.description;
     let mut points = put_task_dto.points;
     let mut link = put_task_dto.link;
+    let mut task_button_text = put_task_dto.task_button_text;
 
     let task = sqlx::query_as::<_, Task>(
-        "SELECT id, description, time_created, points, link FROM tasks WHERE id = $1",
+        "SELECT id, description, points, link, task_button_text FROM tasks WHERE id = $1",
     )
     .bind(put_task_dto.task_id)
     .fetch_one(db)
@@ -76,10 +77,17 @@ pub async fn _put_task(db: &Database, put_task_dto: PutTaskDTO) -> Result<(), sq
         link = Some(task.link.unwrap_or_default());
     }
 
-    sqlx::query("UPDATE tasks SET description = $1, points = $2, link = $3 WHERE id = $4")
+    if task_button_text.is_none(){
+        task_button_text = Some(task.task_button_text.unwrap_or_default());
+    }
+
+    let text = task_button_text.clone();
+
+    sqlx::query("UPDATE tasks SET description = $1, points = $2, link = $3, task_button_text = $4 WHERE id = $5")
         .bind(description)
         .bind(points)
         .bind(link)
+        .bind(text)
         .bind(put_task_dto.task_id)
         .execute(db)
         .await?;

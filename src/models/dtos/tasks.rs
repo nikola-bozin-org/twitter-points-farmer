@@ -25,4 +25,5 @@ pub struct PutTaskDTO {
     pub description: Option<String>,
     pub points: Option<i32>,
     pub link: Option<String>,
+    pub task_button_text:Option<String>
 }

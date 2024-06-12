@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use axum::{
-   extract::Request, http::StatusCode, middleware, response::IntoResponse, routing::{get, post}, Extension, Json, Router
+   http::StatusCode, middleware, response::IntoResponse, routing::{get, post}, Extension, Json, Router
 };
 use axum_extra::{
     headers::{authorization::Bearer, Authorization},
@@ -84,6 +84,7 @@ async fn create_user(
 
     match result {
         Ok(user) => {
+            let cloned_user = user.clone();
             let finished_tasks = &user.finished_tasks;
             let claims = Claims::new(
                 user.id,
@@ -100,11 +101,12 @@ async fn create_user(
                 Ok(jwt) => (
                     StatusCode::OK,
                     Json(json!({
-                        "user": user,
+                        "user": cloned_user,
                         "jwt": jwt
                     })),
                 ),
                 Err(err) => {
+                    dbg!(err);
                     (
                         StatusCode::BAD_REQUEST,
                         Json(json!({
@@ -114,12 +116,16 @@ async fn create_user(
                 }
             }
         }
-        Err(_err) => (
-            StatusCode::BAD_REQUEST,
-            Json(json!({
-                "error": "Bad request"
-            })),
-        ),
+        Err(err) => {
+            dbg!(&err);
+            
+            (
+                StatusCode::BAD_REQUEST,
+                Json(json!({
+                    "error": "Bad request"
+                })),
+            )
+        }
     }
 }
 
@@ -127,11 +133,11 @@ async fn login_user(
     Extension(state): Extension<Arc<AppState>>,
     Json(login_user_dto): Json<LoginUserDTO>,
 ) -> impl IntoResponse {
-    dbg!(&login_user_dto);
     let user = _get_user_by_twitter_id(&state.db, login_user_dto.twitter_id.as_str()).await;
     match user {
         Ok(user) => match user {
             Some(user) => {
+                let cloned_user = user.clone();
                 if user.wallet_address != login_user_dto.solana_adr {
                     (
                         StatusCode::BAD_REQUEST,
@@ -164,7 +170,7 @@ async fn login_user(
                         );
                         match generate_jwt(claims, &state.encoding_key) {
                             Ok(jwt) => {
-                                let public_user: User = user.into();
+                                let public_user: User = cloned_user.into();
                                 (
                                     StatusCode::OK,
                                     Json(json!({
@@ -204,7 +210,7 @@ async fn bind_wallet_address(
 }
 
 async fn get_users(Extension(state): Extension<Arc<AppState>>) -> impl IntoResponse {
-    let users = _get_users(&state.db).await.unwrap();
+    let users: Vec<User> = _get_users(&state.db).await.unwrap();
     (StatusCode::OK, Json(json!({"users": users })))
 }
 
@@ -246,6 +252,7 @@ async fn finish_task(
                         .into_response();
                 }
             };
+            let cloned_user = user.clone();
 
             let claims = Claims::new(
                 user.id,
@@ -260,7 +267,7 @@ async fn finish_task(
 
             match generate_jwt(claims, &state.encoding_key) {
                 Ok(jwt) => {
-                    let public_user: User = user.into();
+                    let public_user: User = cloned_user.into();
                     (
                         StatusCode::OK,
                         Json(json!({

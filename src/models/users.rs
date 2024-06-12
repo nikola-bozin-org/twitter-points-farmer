@@ -1,12 +1,12 @@
 use serde::Serialize;
 use sqlx::prelude::FromRow;
 
-#[derive(Debug, FromRow, Serialize)]
+#[derive(Debug, FromRow, Serialize,Clone)]
 pub struct User {
     pub id: i32,
     pub wallet_address: String,
     pub twitter_id: String,
-    pub referral_code: i32,
+    pub referral_code: String,
     pub total_points: i32,
     pub finished_tasks: Vec<i32>,
     pub referral_points: i32, // received from others farming points
@@ -14,12 +14,12 @@ pub struct User {
     pub referrer_id: Option<i32>,
 }
 
-#[derive(Debug, FromRow, Serialize)]
+#[derive(Debug, FromRow, Serialize,Clone)]
 pub struct UserWithEncryptedPassword {
     pub id: i32,
     pub wallet_address: String,
     pub twitter_id: String,
-    pub referral_code: i32,
+    pub referral_code: String,
     pub total_points: i32,
     pub finished_tasks: Vec<i32>,
     pub referral_points: i32, // received from others farming points
