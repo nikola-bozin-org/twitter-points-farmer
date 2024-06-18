@@ -15,6 +15,13 @@ pub struct User {
     pub multiplier:i32
 }
 
+#[derive(Serialize)]
+pub struct UserSnapshot {
+    pub twitter_id: String,
+    pub wallet_address: String,
+    pub points: i32,
+}
+
 #[derive(Debug, FromRow, Serialize, Clone)]
 pub struct UserWithEncryptedPassword {
     pub id: i32,

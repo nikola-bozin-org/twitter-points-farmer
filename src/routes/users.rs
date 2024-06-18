@@ -18,7 +18,7 @@ use crate::{
     jwt::{generate_jwt, validate_jwt, Claims},
     middlewares::{require_auth_jwt, require_security_hash},
     models::{
-        BindWalletAddressDTO, CreateUserDTO, FinishTaskDTO, LoginUserDTO, SetMultiplierDTO, User, ValidateJwtDTO
+        BindWalletAddressDTO, CreateUserDTO, FinishTaskDTO, LoginUserDTO, SetMultiplierDTO, User, UserSnapshot, ValidateJwtDTO
     },
     password::validate_password,
     state::AppState,
@@ -37,6 +37,7 @@ fn _routes() -> Router {
         .route("/", post(create_user))
         .route("/validate", post(validate_jwt_route))
         .route("/multiplier", post(set_multiplier))
+        .route("/snapshot", get(get_snapshot))
         .route("/", get(get_users))
         .layer(middleware::from_fn(require_security_hash))
 }
@@ -220,6 +221,30 @@ async fn bind_wallet_address(
 async fn get_users(Extension(state): Extension<Arc<AppState>>) -> impl IntoResponse {
     let users: Vec<User> = _get_users(&state.db).await.unwrap();
     (StatusCode::OK, Json(json!({"users": users })))
+}
+
+async fn get_snapshot(Extension(state): Extension<Arc<AppState>>) -> impl IntoResponse {
+    match _get_users(&state.db).await {
+        Ok(users) => {
+            let snapshots: Vec<UserSnapshot> = users.into_iter().map(|user| {
+                UserSnapshot {
+                    twitter_id: user.twitter_id,
+                    wallet_address: user.wallet_address,
+                    points: (user.total_points + user.referral_points) * user.multiplier,
+                }
+            }).collect();
+            
+            Json(snapshots).into_response()
+        },
+        Err(_) => {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({
+                    "error": "Failed to retrieve users."
+                })),
+            ).into_response()
+        },
+    }
 }
 
 

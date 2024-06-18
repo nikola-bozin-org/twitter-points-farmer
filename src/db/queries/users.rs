@@ -50,6 +50,7 @@ pub async fn _create_user(
     .fetch_one(db)
     .await?;
 
+
     let user_id = create_user_result.0;
 
     _save_last_created_user_id(db, user_id).await?;
@@ -75,7 +76,7 @@ pub async fn _create_user(
             }
             None => {
                 let user = sqlx::query_as::<_, User>(
-                    "SELECT id, wallet_address, twitter_id, referral_code, total_points, finished_tasks, referral_points, referred_by, referrer_id FROM users WHERE id = $1"
+                    "SELECT id, wallet_address, twitter_id, referral_code, total_points, finished_tasks, referral_points, referred_by, referrer_id, multiplier FROM users WHERE id = $1"
                 )
                 .bind(create_user_result.0)
                 .fetch_one(db)
@@ -87,12 +88,14 @@ pub async fn _create_user(
     }
     tx.commit().await?;
 
-    let user = sqlx::query_as::<_, User>(
-        "SELECT id, wallet_address, twitter_id, referral_code, total_points, finished_tasks, referral_points, referred_by, referrer_id FROM users WHERE id = $1"
+    let user: User = sqlx::query_as(
+        "SELECT id, wallet_address, twitter_id, referral_code, total_points, finished_tasks, referral_points, referred_by, multiplier, referrer_id FROM users WHERE id = $1"
     )
     .bind(create_user_result.0)
     .fetch_one(db)
     .await?;
+
+
 
     Ok(user)
 }
@@ -179,7 +182,7 @@ pub async fn _get_user_by_referral_code(
     referral_code: String,
 ) -> Result<Option<User>, sqlx::Error> {
     let user: Option<User> =
-        sqlx::query_as("SELECT id, wallet_address, twitter_id, referral_code, total_points, finished_tasks, referral_points, referred_by, referrer_id FROM users WHERE referral_code = $1")
+        sqlx::query_as("SELECT id, wallet_address, twitter_id, referral_code, total_points, finished_tasks, referral_points, referred_by, referrer_id, multiplier FROM users WHERE referral_code = $1")
             .bind(referral_code)
             .fetch_optional(db)
             .await?;
@@ -188,7 +191,7 @@ pub async fn _get_user_by_referral_code(
 
 pub async fn _get_user_by_id(db: &Database, id: i32) -> Result<Option<User>, sqlx::Error> {
     let user: Option<User> =
-        sqlx::query_as("SELECT id, wallet_address, twitter_id, referral_code, total_points, finished_tasks, referral_points, referred_by, referrer_id FROM users WHERE id = $1")
+        sqlx::query_as("SELECT id, wallet_address, twitter_id, referral_code, total_points, finished_tasks, referral_points, referred_by, referrer_id, multiplier FROM users WHERE id = $1")
             .bind(id)
             .fetch_optional(db)
             .await?;
