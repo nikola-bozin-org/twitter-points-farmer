@@ -27,3 +27,10 @@ pub struct PutTaskDTO {
     pub link: Option<String>,
     pub task_button_text: Option<String>,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct SetMultiplierDTO {
+    pub twitter_id: String,
+    pub multiplier: i32
+}
+

@@ -14,11 +14,11 @@ use axum_extra::{
 use serde_json::json;
 
 use crate::{
-    db::{_bind_wallet_address, _create_user, _finish_task, _get_user_by_twitter_id, _get_users},
+    db::{Database, _bind_wallet_address, _create_user, _finish_task, _get_user_by_twitter_id, _get_users, _set_user_multiplier},
     jwt::{generate_jwt, validate_jwt, Claims},
     middlewares::{require_auth_jwt, require_security_hash},
     models::{
-        BindWalletAddressDTO, CreateUserDTO, FinishTaskDTO, LoginUserDTO, User, ValidateJwtDTO,
+        BindWalletAddressDTO, CreateUserDTO, FinishTaskDTO, LoginUserDTO, SetMultiplierDTO, User, ValidateJwtDTO
     },
     password::validate_password,
     state::AppState,
@@ -36,9 +36,12 @@ fn _routes() -> Router {
         .route("/login", post(login_user))
         .route("/", post(create_user))
         .route("/validate", post(validate_jwt_route))
+        .route("/multiplier", post(set_multiplier))
         .route("/", get(get_users))
         .layer(middleware::from_fn(require_security_hash))
 }
+
+
 
 async fn validate_jwt_route(
     authorization_token: TypedHeader<Authorization<Bearer>>,
@@ -116,7 +119,6 @@ async fn create_user(
                     })),
                 ),
                 Err(err) => {
-                    dbg!(err);
                     (
                         StatusCode::BAD_REQUEST,
                         Json(json!({
@@ -127,8 +129,6 @@ async fn create_user(
             }
         }
         Err(err) => {
-            dbg!(&err);
-
             (
                 StatusCode::BAD_REQUEST,
                 Json(json!({
@@ -220,6 +220,43 @@ async fn bind_wallet_address(
 async fn get_users(Extension(state): Extension<Arc<AppState>>) -> impl IntoResponse {
     let users: Vec<User> = _get_users(&state.db).await.unwrap();
     (StatusCode::OK, Json(json!({"users": users })))
+}
+
+
+async fn set_multiplier(
+    Extension(state): Extension<Arc<AppState>>,
+    Json(set_multiplier_dto): Json<SetMultiplierDTO>,
+)-> impl IntoResponse {
+    let user_result = _get_user_by_twitter_id(&state.db,&set_multiplier_dto.twitter_id).await;
+    match user_result {
+        Ok(user_option) => {
+            match user_option {
+                Some(user) => {
+                    _set_user_multiplier(&state.db, user.id, set_multiplier_dto.multiplier).await.unwrap();
+
+                    (StatusCode::OK).into_response()
+                },
+                None => {
+                    (
+                        StatusCode::BAD_REQUEST,
+                        Json(json!({
+                            "error": "User not found."
+                        })),
+                    )
+                        .into_response()
+                }
+            }
+        },
+        Err(_) => {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({
+                    "error": "Something went wrong."
+                })),
+            )
+                .into_response()
+        },
+    }
 }
 
 async fn finish_task(

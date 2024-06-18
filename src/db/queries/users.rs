@@ -116,7 +116,7 @@ pub async fn _bind_wallet_address(
 
 pub async fn _get_users(db: &Database) -> Result<Vec<User>, sqlx::Error> {
     let users: Vec<User> =
-        sqlx::query_as("SELECT id, wallet_address, twitter_id, referral_code, total_points, finished_tasks, referral_points, referred_by, referrer_id from users")
+        sqlx::query_as("SELECT id, wallet_address, twitter_id, referral_code, total_points, finished_tasks, referral_points, referred_by, referrer_id, multiplier from users")
             .fetch_all(db)
             .await?;
     Ok(users)
@@ -218,6 +218,19 @@ pub async fn _get_user_by_twitter_id(
             .await?;
 
     Ok(user)
+}
+
+
+pub async fn _set_user_multiplier(db: &Database, user_id: i32, multiplier: i32) -> Result<(), sqlx::Error> {
+    sqlx::query(
+        "UPDATE users SET multiplier = $1 WHERE id = $2",
+    )
+    .bind(multiplier)
+    .bind(user_id)
+    .execute(db)
+    .await?;
+    
+    Ok(())
 }
 
 #[cfg(test)]
