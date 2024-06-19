@@ -14,11 +14,15 @@ use axum_extra::{
 use serde_json::json;
 
 use crate::{
-    db::{Database, _bind_wallet_address, _create_user, _finish_task, _get_user_by_twitter_id, _get_users, _set_user_multiplier},
+    db::{
+        _bind_wallet_address, _create_user, _finish_task, _get_user_by_twitter_id, _get_users,
+        _set_user_multiplier,
+    },
     jwt::{generate_jwt, validate_jwt, Claims},
     middlewares::{require_auth_jwt, require_security_hash},
     models::{
-        BindWalletAddressDTO, CreateUserDTO, FinishTaskDTO, LoginUserDTO, SetMultiplierDTO, User, UserSnapshot, ValidateJwtDTO
+        BindWalletAddressDTO, CreateUserDTO, FinishTaskDTO, LoginUserDTO, SetMultiplierDTO, User,
+        UserSnapshot, ValidateJwtDTO,
     },
     password::validate_password,
     state::AppState,
@@ -41,8 +45,6 @@ fn _routes() -> Router {
         .route("/", get(get_users))
         .layer(middleware::from_fn(require_security_hash))
 }
-
-
 
 async fn validate_jwt_route(
     authorization_token: TypedHeader<Authorization<Bearer>>,
@@ -76,6 +78,7 @@ async fn validate_jwt_route(
                 user.referral_points,
                 user.referral_code,
                 user.finished_tasks,
+                user.multiplier,
             );
 
             (StatusCode::OK, Json(json!({"claims":claims}))).into_response()
@@ -109,6 +112,7 @@ async fn create_user(
                 user.referral_points,
                 user.referral_code,
                 finished_tasks.clone(),
+                user.multiplier,
             );
 
             match generate_jwt(claims, &state.encoding_key) {
@@ -119,24 +123,20 @@ async fn create_user(
                         "jwt": jwt
                     })),
                 ),
-                Err(err) => {
-                    (
-                        StatusCode::BAD_REQUEST,
-                        Json(json!({
-                            "error": "Bad Request"
-                        })),
-                    )
-                }
+                Err(_err) => (
+                    StatusCode::BAD_REQUEST,
+                    Json(json!({
+                        "error": "Bad Request"
+                    })),
+                ),
             }
         }
-        Err(err) => {
-            (
-                StatusCode::BAD_REQUEST,
-                Json(json!({
-                    "error": "Bad request"
-                })),
-            )
-        }
+        Err(_err) => (
+            StatusCode::BAD_REQUEST,
+            Json(json!({
+                "error": "Bad request"
+            })),
+        ),
     }
 }
 
@@ -178,6 +178,7 @@ async fn login_user(
                             user.referral_points,
                             user.referral_code,
                             user.finished_tasks.clone(),
+                            user.multiplier,
                         );
                         match generate_jwt(claims, &state.encoding_key) {
                             Ok(jwt) => {
@@ -226,61 +227,56 @@ async fn get_users(Extension(state): Extension<Arc<AppState>>) -> impl IntoRespo
 async fn get_snapshot(Extension(state): Extension<Arc<AppState>>) -> impl IntoResponse {
     match _get_users(&state.db).await {
         Ok(users) => {
-            let snapshots: Vec<UserSnapshot> = users.into_iter().map(|user| {
-                UserSnapshot {
+            let snapshots: Vec<UserSnapshot> = users
+                .into_iter()
+                .map(|user| UserSnapshot {
                     twitter_id: user.twitter_id,
                     wallet_address: user.wallet_address,
                     points: (user.total_points + user.referral_points) * user.multiplier,
-                }
-            }).collect();
-            
+                })
+                .collect();
+
             Json(snapshots).into_response()
-        },
-        Err(_) => {
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({
-                    "error": "Failed to retrieve users."
-                })),
-            ).into_response()
-        },
+        }
+        Err(_) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({
+                "error": "Failed to retrieve users."
+            })),
+        )
+            .into_response(),
     }
 }
-
 
 async fn set_multiplier(
     Extension(state): Extension<Arc<AppState>>,
     Json(set_multiplier_dto): Json<SetMultiplierDTO>,
-)-> impl IntoResponse {
-    let user_result = _get_user_by_twitter_id(&state.db,&set_multiplier_dto.twitter_id).await;
+) -> impl IntoResponse {
+    let user_result = _get_user_by_twitter_id(&state.db, &set_multiplier_dto.twitter_id).await;
     match user_result {
-        Ok(user_option) => {
-            match user_option {
-                Some(user) => {
-                    _set_user_multiplier(&state.db, user.id, set_multiplier_dto.multiplier).await.unwrap();
+        Ok(user_option) => match user_option {
+            Some(user) => {
+                _set_user_multiplier(&state.db, user.id, set_multiplier_dto.multiplier)
+                    .await
+                    .unwrap();
 
-                    (StatusCode::OK).into_response()
-                },
-                None => {
-                    (
-                        StatusCode::BAD_REQUEST,
-                        Json(json!({
-                            "error": "User not found."
-                        })),
-                    )
-                        .into_response()
-                }
+                (StatusCode::OK).into_response()
             }
-        },
-        Err(_) => {
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
+            None => (
+                StatusCode::BAD_REQUEST,
                 Json(json!({
-                    "error": "Something went wrong."
+                    "error": "User not found."
                 })),
             )
-                .into_response()
+                .into_response(),
         },
+        Err(_) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({
+                "error": "Something went wrong."
+            })),
+        )
+            .into_response(),
     }
 }
 
@@ -333,6 +329,7 @@ async fn finish_task(
                 user.referral_points,
                 user.referral_code,
                 user.finished_tasks.clone(),
+                user.multiplier,
             );
 
             match generate_jwt(claims, &state.encoding_key) {

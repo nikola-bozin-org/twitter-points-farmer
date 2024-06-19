@@ -31,6 +31,5 @@ pub struct PutTaskDTO {
 #[derive(Debug, Deserialize)]
 pub struct SetMultiplierDTO {
     pub twitter_id: String,
-    pub multiplier: i32
+    pub multiplier: i32,
 }
-

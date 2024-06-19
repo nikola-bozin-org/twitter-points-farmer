@@ -12,7 +12,7 @@ pub struct User {
     pub referral_points: i32, // received from others farming points
     pub referred_by: Vec<i32>,
     pub referrer_id: Option<i32>,
-    pub multiplier:i32
+    pub multiplier: i32,
 }
 
 #[derive(Serialize)]
@@ -34,7 +34,7 @@ pub struct UserWithEncryptedPassword {
     pub referred_by: Vec<i32>,
     pub referrer_id: Option<i32>,
     pub encrypted_password: String,
-    pub multiplier:i32
+    pub multiplier: i32,
 }
 
 impl From<UserWithEncryptedPassword> for User {
@@ -49,7 +49,7 @@ impl From<UserWithEncryptedPassword> for User {
             twitter_id: user.twitter_id,
             wallet_address: user.wallet_address,
             finished_tasks: user.finished_tasks,
-            multiplier:user.multiplier
+            multiplier: user.multiplier,
         }
     }
 }

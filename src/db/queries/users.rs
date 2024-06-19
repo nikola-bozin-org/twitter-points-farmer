@@ -50,7 +50,6 @@ pub async fn _create_user(
     .fetch_one(db)
     .await?;
 
-
     let user_id = create_user_result.0;
 
     _save_last_created_user_id(db, user_id).await?;
@@ -94,8 +93,6 @@ pub async fn _create_user(
     .bind(create_user_result.0)
     .fetch_one(db)
     .await?;
-
-
 
     Ok(user)
 }
@@ -223,16 +220,17 @@ pub async fn _get_user_by_twitter_id(
     Ok(user)
 }
 
+pub async fn _set_user_multiplier(
+    db: &Database,
+    user_id: i32,
+    multiplier: i32,
+) -> Result<(), sqlx::Error> {
+    sqlx::query("UPDATE users SET multiplier = $1 WHERE id = $2")
+        .bind(multiplier)
+        .bind(user_id)
+        .execute(db)
+        .await?;
 
-pub async fn _set_user_multiplier(db: &Database, user_id: i32, multiplier: i32) -> Result<(), sqlx::Error> {
-    sqlx::query(
-        "UPDATE users SET multiplier = $1 WHERE id = $2",
-    )
-    .bind(multiplier)
-    .bind(user_id)
-    .execute(db)
-    .await?;
-    
     Ok(())
 }
 

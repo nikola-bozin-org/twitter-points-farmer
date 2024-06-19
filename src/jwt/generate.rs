@@ -30,6 +30,7 @@ pub struct Claims {
     pub referrals_count: u32,
     pub referral_code: String,
     pub finished_tasks: Vec<i32>,
+    pub multiplier: i32,
 }
 impl Claims {
     #[allow(clippy::too_many_arguments)]
@@ -42,6 +43,7 @@ impl Claims {
         referrals_points: i32,
         referral_code: String,
         finished_tasks: Vec<i32>,
+        multiplier: i32,
     ) -> Self {
         Self {
             id,
@@ -53,6 +55,7 @@ impl Claims {
             referrals_points,
             referral_code,
             finished_tasks,
+            multiplier,
         }
     }
 }
@@ -87,6 +90,7 @@ mod tests {
             referrals_points: 123,
             total_points: 1111,
             finished_tasks: vec![],
+            multiplier: 1,
         };
         let encoding_key = init_encoding_key("secret_key").unwrap();
         let encoded = generate_jwt(claim, &encoding_key).unwrap();

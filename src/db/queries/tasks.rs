@@ -16,10 +16,9 @@ pub async fn _create_task(
     .bind(create_task_dto.task_button_text)
     .fetch_one(db)
     .await?;
-    
+
     Ok(row.0)
 }
-
 
 pub async fn _delete_task(
     db: &Database,
