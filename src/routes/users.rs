@@ -153,7 +153,7 @@ async fn login_user(
                 if user.wallet_address != login_user_dto.solana_adr {
                     (
                         StatusCode::BAD_REQUEST,
-                        Json(json!({"error":"Bad credentials."})),
+                        Json(json!({"error":"Wrong wallet connected."})),
                     )
                         .into_response()
                 } else {
@@ -204,7 +204,9 @@ async fn login_user(
                     }
                 }
             }
-            None => (StatusCode::BAD_REQUEST, "Bad credentials").into_response(),
+            None => (StatusCode::BAD_REQUEST, Json(json!({
+                "error": "Bad Request"
+            })),).into_response(),
         },
         Err(_) => (StatusCode::BAD_REQUEST, "Something went wrong.").into_response(),
     }
