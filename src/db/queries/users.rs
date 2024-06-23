@@ -127,7 +127,7 @@ pub async fn _finish_task(
     finish_task_dto: FinishTaskDTO,
 ) -> Result<(), sqlx::Error> {
     // This can be optimized. We dont need to query all!
-    let mut user = _get_user_by_twitter_id(db, finish_task_dto.user_id.as_str())
+    let mut user = _get_user_by_wallet_address(db, finish_task_dto.wallet.as_str())
         .await?
         .ok_or_else(|| sqlx::Error::RowNotFound)?;
 
@@ -146,11 +146,11 @@ pub async fn _finish_task(
 
         // Update the user in the database
         sqlx::query(
-            "UPDATE users SET finished_tasks = $1, total_points = $2 WHERE twitter_id = $3",
+            "UPDATE users SET finished_tasks = $1, total_points = $2 WHERE wallet_address = $3",
         )
         .bind(&user.finished_tasks)
         .bind(user.total_points)
-        .bind(finish_task_dto.user_id)
+        .bind(finish_task_dto.wallet)
         .execute(db)
         .await?;
 
@@ -220,6 +220,21 @@ pub async fn _get_user_by_twitter_id(
 
     Ok(user)
 }
+
+
+pub async fn _get_user_by_wallet_address(
+    db: &Database,
+    wallet_address: &str,
+) -> Result<Option<UserWithEncryptedPassword>, sqlx::Error> {
+    let user =
+        sqlx::query_as::<_, UserWithEncryptedPassword>("SELECT * FROM users WHERE wallet_address = $1")
+            .bind(wallet_address)
+            .fetch_optional(db)
+            .await?;
+
+    Ok(user)
+}
+
 
 pub async fn _set_user_multiplier(
     db: &Database,

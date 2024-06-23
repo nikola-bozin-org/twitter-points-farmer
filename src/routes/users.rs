@@ -15,8 +15,7 @@ use serde_json::json;
 
 use crate::{
     db::{
-        _bind_wallet_address, _create_user, _finish_task, _get_user_by_twitter_id, _get_users,
-        _set_user_multiplier,
+        _bind_wallet_address, _create_user, _finish_task, _get_user_by_twitter_id, _get_user_by_wallet_address, _get_users, _set_user_multiplier
     },
     jwt::{generate_jwt, validate_jwt, Claims},
     middlewares::{require_auth_jwt, require_security_hash},
@@ -56,7 +55,7 @@ async fn validate_jwt_route(
     let token = authorization_token.token();
     match validate_jwt::<Claims>(token, &state.decoding_key) {
         Ok(claims) => {
-            let user = _get_user_by_twitter_id(&state.db, &claims.username)
+            let user = _get_user_by_wallet_address(&state.db, &claims.wallet)
                 .await
                 .unwrap()
                 .unwrap();
@@ -146,7 +145,7 @@ async fn login_user(
     Extension(state): Extension<Arc<AppState>>,
     Json(login_user_dto): Json<LoginUserDTO>,
 ) -> impl IntoResponse {
-    let user = _get_user_by_twitter_id(&state.db, login_user_dto.twitter_id.as_str()).await;
+    let user = _get_user_by_wallet_address(&state.db, login_user_dto.solana_adr.as_str()).await;
     match user {
         Ok(user) => match user {
             Some(user) => {
@@ -289,8 +288,8 @@ async fn finish_task(
     Extension(state): Extension<Arc<AppState>>,
     Json(finish_task_dto): Json<FinishTaskDTO>,
 ) -> impl IntoResponse {
-    let user_id = finish_task_dto.user_id.clone();
-    if user_id != claims.username {
+    let wallet = finish_task_dto.wallet.clone();
+    if wallet != claims.wallet {
         return (
             StatusCode::BAD_REQUEST,
             Json(json!({
@@ -301,7 +300,7 @@ async fn finish_task(
     }
     match _finish_task(&state.db, finish_task_dto).await {
         Ok(_) => {
-            let user = match _get_user_by_twitter_id(&state.db, user_id.as_str()).await {
+            let user = match _get_user_by_wallet_address(&state.db, wallet.as_str()).await {
                 Ok(Some(user)) => user,
                 Ok(None) => {
                     return (

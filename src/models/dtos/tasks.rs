@@ -10,8 +10,8 @@ pub struct CreateTaskDTO {
 
 #[derive(Debug, Deserialize)]
 pub struct FinishTaskDTO {
-    pub user_id: String,
     pub task_id: i32,
+    pub wallet:String,
 }
 
 #[derive(Debug, Deserialize)]
