@@ -155,7 +155,7 @@ pub async fn _finish_task(
         .await?;
 
         if user.referrer_id.is_some() {
-            let mut user_referral: User = sqlx::query_as("SELECT id, wallet_address, twitter_id, referral_code, total_points, finished_tasks, referral_points, referred_by, referrer_id FROM users WHERE id = $1")
+            let mut user_referral: User = sqlx::query_as("SELECT id, wallet_address, twitter_id, referral_code, total_points, finished_tasks, referral_points, referred_by, referrer_id, multiplier FROM users WHERE id = $1")
             .bind(user.referrer_id)
             .fetch_one(db)
             .await?;
@@ -169,6 +169,7 @@ pub async fn _finish_task(
                 .bind(user_referral.id)
                 .execute(db)
                 .await?;
+
         }
     }
     Ok(())
@@ -296,7 +297,7 @@ mod tests {
             .await
             .expect("Failed to create pool");
 
-        let user_id = "nb_crypto";
+        let user_id = "Gatter Terapie";
 
         let rows_affected = _delete_user_by_twitter_id(&pool, user_id)
             .await

@@ -28,6 +28,8 @@ use crate::{
     state::AppState,
 };
 
+use super::dbg;
+
 pub fn routes() -> Router {
     Router::new().nest("/users", _routes())
 }
@@ -144,7 +146,6 @@ async fn login_user(
     Extension(state): Extension<Arc<AppState>>,
     Json(login_user_dto): Json<LoginUserDTO>,
 ) -> impl IntoResponse {
-    dbg!(&login_user_dto);
     let user = _get_user_by_twitter_id(&state.db, login_user_dto.twitter_id.as_str()).await;
     match user {
         Ok(user) => match user {
@@ -311,7 +312,7 @@ async fn finish_task(
                     )
                         .into_response();
                 }
-                Err(_) => {
+                Err(e) => {
                     return (
                         StatusCode::INTERNAL_SERVER_ERROR,
                         Json(json!({
@@ -322,7 +323,6 @@ async fn finish_task(
                 }
             };
             let cloned_user = user.clone();
-
             let claims = Claims::new(
                 user.id,
                 user.twitter_id.clone(),
