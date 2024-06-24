@@ -145,7 +145,7 @@ async fn login_user(
     Extension(state): Extension<Arc<AppState>>,
     Json(login_user_dto): Json<LoginUserDTO>,
 ) -> impl IntoResponse {
-    let user = _get_user_by_wallet_address(&state.db, login_user_dto.solana_adr.as_str()).await;
+    let user = _get_user_by_twitter_id(&state.db, login_user_dto.solana_adr.as_str()).await;
     match user {
         Ok(user) => match user {
             Some(user) => {
@@ -166,7 +166,7 @@ async fn login_user(
                     if !is_password_valid {
                         (
                             StatusCode::BAD_REQUEST,
-                            Json(json!({"error":"Bad credentials"})),
+                            Json(json!({"error":"Bad credentials."})),
                         )
                             .into_response()
                     } else {
@@ -205,10 +205,10 @@ async fn login_user(
                 }
             }
             None => (StatusCode::BAD_REQUEST, Json(json!({
-                "error": "Bad Request"
+                "error": "User does not exist."
             })),).into_response(),
         },
-        Err(_) => (StatusCode::BAD_REQUEST, "Something went wrong.").into_response(),
+        Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Server error.").into_response(),
     }
 }
 
