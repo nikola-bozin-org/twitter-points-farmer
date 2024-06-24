@@ -145,7 +145,7 @@ async fn login_user(
     Extension(state): Extension<Arc<AppState>>,
     Json(login_user_dto): Json<LoginUserDTO>,
 ) -> impl IntoResponse {
-    let user = _get_user_by_twitter_id(&state.db, login_user_dto.solana_adr.as_str()).await;
+    let user = _get_user_by_twitter_id(&state.db, login_user_dto.twitter_id.as_str()).await;
     match user {
         Ok(user) => match user {
             Some(user) => {
